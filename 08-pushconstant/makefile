@@ -12,7 +12,7 @@ fragSources = $(shell find ${SHADERS} -type f -name "*.frag")
 fragObjFiles = $(patsubst %.frag, %.frag.spv, $(fragSources))
 
 TARGET = a.out
-$(TARGET): $(vertObjFiles) $(fragObjFiles) */*.cpp */*.hpp
+$(TARGET): $(vertObjFiles) $(fragObjFiles) *.cpp *.hpp */*.cpp */*.hpp
 	g++ $(CFLAGS) -o $(TARGET) *.cpp ${ENGINE}/*.cpp $(LDFLAGS)
 
 %.spv: %
