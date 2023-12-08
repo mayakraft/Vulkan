@@ -70,7 +70,7 @@ namespace VulkanEngine {
 
 	void Device::createInstance() {
 		if (enableValidationLayers && !checkValidationLayerSupport()) {
-			throw std::runtime_error("validation layers requested, but not available!");
+			throw std::runtime_error("validation layers requested, but not available");
 		}
 
 		VkApplicationInfo appInfo = {};
@@ -105,7 +105,7 @@ namespace VulkanEngine {
 		createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
 		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create instance!");
+			throw std::runtime_error("failed to create instance");
 		}
 
 		hasGflwRequiredInstanceExtensions();
@@ -115,7 +115,7 @@ namespace VulkanEngine {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 		if (deviceCount == 0) {
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+			throw std::runtime_error("failed to find GPUs with Vulkan support");
 		}
 		std::cout << "Device count: " << deviceCount << std::endl;
 		std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -129,7 +129,7 @@ namespace VulkanEngine {
 		}
 
 		if (physicalDevice == VK_NULL_HANDLE) {
-			throw std::runtime_error("failed to find a suitable GPU!");
+			throw std::runtime_error("failed to find a suitable GPU");
 		}
 
 		vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -175,7 +175,7 @@ namespace VulkanEngine {
 		}
 
 		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device_) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create logical device!");
+			throw std::runtime_error("failed to create logical device");
 		}
 
 		vkGetDeviceQueue(device_, indices.graphicsFamily, 0, &graphicsQueue_);
@@ -192,7 +192,7 @@ namespace VulkanEngine {
 				VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		if (vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create command pool!");
+			throw std::runtime_error("failed to create command pool");
 		}
 	}
 
@@ -234,7 +234,7 @@ namespace VulkanEngine {
 		VkDebugUtilsMessengerCreateInfoEXT createInfo;
 		populateDebugMessengerCreateInfo(createInfo);
 		if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-			throw std::runtime_error("failed to set up debug messenger!");
+			throw std::runtime_error("failed to set up debug messenger");
 		}
 	}
 
@@ -405,7 +405,7 @@ namespace VulkanEngine {
 				return format;
 			}
 		}
-		throw std::runtime_error("failed to find supported format!");
+		throw std::runtime_error("failed to find supported format");
 	}
 
 	uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -418,7 +418,7 @@ namespace VulkanEngine {
 			}
 		}
 
-		throw std::runtime_error("failed to find suitable memory type!");
+		throw std::runtime_error("failed to find suitable memory type");
 	}
 
 	void Device::createBuffer(
@@ -434,7 +434,7 @@ namespace VulkanEngine {
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		if (vkCreateBuffer(device_, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create vertex buffer!");
+			throw std::runtime_error("failed to create vertex buffer");
 		}
 
 		VkMemoryRequirements memRequirements;
@@ -446,7 +446,7 @@ namespace VulkanEngine {
 		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
 		if (vkAllocateMemory(device_, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate vertex buffer memory!");
+			throw std::runtime_error("failed to allocate vertex buffer memory");
 		}
 
 		vkBindBufferMemory(device_, buffer, bufferMemory, 0);
@@ -529,7 +529,7 @@ namespace VulkanEngine {
 			VkImage &image,
 			VkDeviceMemory &imageMemory) {
 		if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create image!");
+			throw std::runtime_error("failed to create image");
 		}
 
 		VkMemoryRequirements memRequirements;
@@ -541,11 +541,11 @@ namespace VulkanEngine {
 		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
 		if (vkAllocateMemory(device_, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate image memory!");
+			throw std::runtime_error("failed to allocate image memory");
 		}
 
 		if (vkBindImageMemory(device_, image, imageMemory, 0) != VK_SUCCESS) {
-			throw std::runtime_error("failed to bind image memory!");
+			throw std::runtime_error("failed to bind image memory");
 		}
 	}
 
