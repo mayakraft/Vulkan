@@ -26,11 +26,13 @@ Install [VulkanSDK](https://vulkan.lunarg.com/sdk/home#mac), which installs Molt
 
 ### system environment variables
 
-I ran these. I suspect the first line is what mattered the most.
+This is important. For some reason I need to keep running this after opening every new terminal.
 
 ```
 export DYLD_LIBRARY_PATH=/Library/VulkanSDK/1.3.268.1/macOS/lib
 ```
+
+I also ran these. Not sure how important these are.
 
 ```
 export VK_ICD_FILENAMES=/Library/VulkanSDK/1.3.268.1/MoltenVK/dylib/macOS/MoltenVK_icd.json

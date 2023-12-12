@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vkwindow.hpp"
+#include "window.hpp"
 
 namespace VulkanEngine {
 	class App {
@@ -12,6 +12,6 @@ namespace VulkanEngine {
 		void run();
 
 	private:
-		VKWindow window{WIDTH, HEIGHT, "Hello Vulkan"};
+		Window window{WIDTH, HEIGHT, "Hello Vulkan"};
 	};
 }

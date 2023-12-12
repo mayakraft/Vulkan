@@ -60,9 +60,14 @@ namespace VulkanEngine {
 	void SimpleRenderSystem::renderGameObjects(
 		VkCommandBuffer commandBuffer,
 		std::vector<GameObject> &gameObjects) {
+		static float frame = 0;
+		frame += 1;
 		pipeline->bind(commandBuffer);
 		for (auto& obj: gameObjects) {
 			obj.transform2D.rotation = glm::mod(obj.transform2D.rotation + 0.01f, glm::two_pi<float>());
+			float scale = 1.0f + 0.5f * glm::sin(frame * 0.01f);
+			obj.transform2D.scale = { scale, scale };
+			obj.transform2D.translation.x = 0.2f * glm::sin(frame * 0.005f);
 
 			SimplePushConstantData push{};
 			push.offset = obj.transform2D.translation;
