@@ -6,7 +6,7 @@
 int main() {
 	try {
 		auto engine = Engine{};
-		engine.update();
+		engine.startLoop();
 	} catch(const std::exception &e) {
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;

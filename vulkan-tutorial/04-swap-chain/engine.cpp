@@ -3,7 +3,10 @@
 #include <iostream>
 #include <vector>
 #include <unordered_set>
-
+#include <set>
+#include <cstdint>
+#include <limits> // Necessary for std::numeric_limits
+#include <algorithm> // Necessary for std::clamp
 /**
  * Initialize everything
  */
@@ -74,6 +77,17 @@ Engine::Engine() {
 	}
 
 	//
+	// window surface
+	//
+	// To maintain platform agnosticism, Vulkan cannot interface with a window
+	// system on its own. Ask GLFW to create this, specific to our platform.
+	//
+
+	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create window surface");
+	}
+
+	//
 	// Vulkan physical device
 	//
 	// The physical device refers to the IRL physical hardware.
@@ -87,7 +101,7 @@ Engine::Engine() {
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 	if (deviceCount == 0) {
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+		throw std::runtime_error("failed to find GPUs with Vulkan support");
 	}
 	// if there are more than one device, we need to somehow only choose 1.
 	// we will need to write some kind of heuristic method to determine
@@ -118,25 +132,47 @@ Engine::Engine() {
 
 	// iterate over the queues to find which is the graphics queue.
 	int graphicsFamily = -1;
+	int presentFamily = -1;
 	for (int i = 0; i < queueFamilies.size(); i += 1) {
 		if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			graphicsFamily = i;
 		}
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+		if (presentSupport) {
+			presentFamily = i;
+		}
 	}
 
 	// this process should be inside the "choose best device" functionality.
-	if (graphicsFamily == -1) {
-		throw std::runtime_error("selected GPU does not support graphics family!");
+	if (graphicsFamily == -1 || presentFamily == -1) {
+		throw std::runtime_error("selected GPU does not support correct queue families");
 	}
 
-	// This struct specifies how many queues we want for this particular
-	// queue family, in this case, the graphics queue family.
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	std::set<uint32_t> uniqueQueueFamilies = {
+		(uint32_t)graphicsFamily,
+		(uint32_t)presentFamily
+	};
+
 	float queuePriority = 1.0f;
-	VkDeviceQueueCreateInfo queueCreateInfo{};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = (uint32_t)graphicsFamily;
-	queueCreateInfo.queueCount = 1;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	for (uint32_t queueFamily : uniqueQueueFamilies) {
+		VkDeviceQueueCreateInfo queueCreateInfo{};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
+
+	// // This struct specifies how many queues we want for this particular
+	// // queue family, in this case, the graphics queue family.
+	// float queuePriority = 1.0f;
+	// VkDeviceQueueCreateInfo queueCreateInfo{};
+	// queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	// queueCreateInfo.queueFamilyIndex = (uint32_t)graphicsFamily;
+	// queueCreateInfo.queueCount = 1;
+	// queueCreateInfo.pQueuePriorities = &queuePriority;
 
 	// Device features include things like geometry shaders, we can require
 	// these things here, as long as we detected them in the chooseBestDevice.
@@ -147,13 +183,14 @@ Engine::Engine() {
 	VkDeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.enabledExtensionCount = 0;
+	deviceCreateInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 	deviceCreateInfo.enabledLayerCount = 0;
+	deviceCreateInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();
+	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 	if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create logical device!");
+		throw std::runtime_error("failed to create logical device");
 	}
 
 	// The Queue family stuff was previously calculated on the physical device.
@@ -161,7 +198,112 @@ Engine::Engine() {
 	// 0 is the index of the first (and only) queue, if we were creating
 	// more than one we would increment the number here.
 	vkGetDeviceQueue(logicalDevice, graphicsFamily, 0, &graphicsQueue);
+	vkGetDeviceQueue(logicalDevice, presentFamily, 0, &presentQueue);
 
+	//
+	// Swap Chain
+	//
+
+	VkSurfaceCapabilitiesKHR capabilities;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+
+	std::vector<VkSurfaceFormatKHR> formats;
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+	if (formatCount != 0) {
+		formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+	}
+
+	std::vector<VkPresentModeKHR> presentModes;
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+	if (presentModeCount != 0) {
+		presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+	}
+
+	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(formats);
+	VkPresentModeKHR presentMode = chooseSwapPresentMode(presentModes);
+	VkExtent2D extent = chooseSwapExtent(capabilities);
+	swapChainImageFormat = surfaceFormat.format;
+	swapChainExtent = extent;
+
+	uint32_t imageCount = capabilities.minImageCount + 1;
+	if (capabilities.maxImageCount > 0
+		&& imageCount > capabilities.maxImageCount) {
+		imageCount = capabilities.maxImageCount;
+	}
+
+	std::cout << "formatCount " << formatCount << std::endl;
+	std::cout << "presentModeCount " << presentModeCount << std::endl;
+	std::cout << "capabilities.currentExtent " << capabilities.currentExtent.width << " " << capabilities.currentExtent.height << std::endl;
+	std::cout << "surfaceFormat.format " << surfaceFormat.format << std::endl;
+	std::cout << "imageCount " << imageCount << std::endl;
+
+	uint32_t swapQueueFamilyIndices[] = {
+		(uint32_t)graphicsFamily,
+		(uint32_t)presentFamily
+	};
+	VkSwapchainCreateInfoKHR swapCreateInfo{};
+	swapCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapCreateInfo.surface = surface;
+	swapCreateInfo.minImageCount = imageCount;
+	swapCreateInfo.imageFormat = surfaceFormat.format;
+	swapCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
+	swapCreateInfo.imageExtent = extent;
+	swapCreateInfo.imageArrayLayers = 1;
+	swapCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	// if (indices.graphicsFamily != indices.presentFamily) {
+	// 	swapCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+	// 	swapCreateInfo.queueFamilyIndexCount = 2;
+	// 	swapCreateInfo.pQueueFamilyIndices = swapQueueFamilyIndices;
+	// } else {
+	// 	swapCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	// 	swapCreateInfo.queueFamilyIndexCount = 0; // Optional
+	// 	swapCreateInfo.pQueueFamilyIndices = nullptr; // Optional
+	// }
+	swapCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+	swapCreateInfo.queueFamilyIndexCount = 2;
+	swapCreateInfo.pQueueFamilyIndices = swapQueueFamilyIndices;
+	swapCreateInfo.preTransform = capabilities.currentTransform;
+	swapCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	swapCreateInfo.presentMode = presentMode;
+	swapCreateInfo.clipped = VK_TRUE;
+	swapCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	if (vkCreateSwapchainKHR(logicalDevice, &swapCreateInfo, nullptr, &swapChain) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create swap chain!");
+	}
+
+	vkGetSwapchainImagesKHR(logicalDevice, swapChain, &imageCount, nullptr);
+	swapChainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(logicalDevice, swapChain, &imageCount, swapChainImages.data());
+
+	//
+	// Swap Chain Image Views
+	//
+
+	swapChainImageViews.resize(swapChainImages.size());
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.image = swapChainImages[i];
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = swapChainImageFormat;
+		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		createInfo.subresourceRange.baseMipLevel = 0;
+		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+		createInfo.subresourceRange.layerCount = 1;
+		if (vkCreateImageView(logicalDevice, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image views!");
+		}
+	}
 	printInfo(instanceExtensions, deviceCount);
 }
 
@@ -170,7 +312,12 @@ Engine::Engine() {
  */
 Engine::~Engine() {
 	// vulkan
+	for (auto imageView : swapChainImageViews) {
+		vkDestroyImageView(logicalDevice, imageView, nullptr);
+	}
+	vkDestroySwapchainKHR(logicalDevice, swapChain, nullptr);
 	vkDestroyDevice(logicalDevice, nullptr);
+	vkDestroySurfaceKHR(instance, surface, nullptr);
 	vkDestroyInstance(instance, nullptr);
 
 	// glfw
@@ -181,7 +328,7 @@ Engine::~Engine() {
 /**
  * Draw loop
  */
-void Engine::update() {
+void Engine::startLoop() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 	}
@@ -217,6 +364,44 @@ VkPhysicalDevice Engine::chooseBestDevice(std::vector<VkPhysicalDevice> devices)
 	throw std::runtime_error("No suitable Vulkan device found");
 }
 
+VkSurfaceFormatKHR Engine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	for (const auto& availableFormat : availableFormats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
+			&& availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+	return availableFormats[0];
+}
+
+VkPresentModeKHR Engine::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+	for (const auto& availablePresentMode : availablePresentModes) {
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			return availablePresentMode;
+		}
+	}
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+        return capabilities.currentExtent;
+    } else {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+
+        VkExtent2D actualExtent = {
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height)
+        };
+        std::cout << "actualExtent " << width << " " << height << std::endl;
+
+        actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+        actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+        return actualExtent;
+    }
+}
 /**
  * Useful for opening the compiled shader binary files.
  */

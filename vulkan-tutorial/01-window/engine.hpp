@@ -7,7 +7,7 @@ class Engine {
 public:
 	Engine();
 	~Engine();
-	void update();
+	void startLoop();
 
 private:
 	GLFWwindow *window;

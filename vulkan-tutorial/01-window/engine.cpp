@@ -31,7 +31,7 @@ Engine::~Engine() {
 /**
  * Draw loop
  */
-void Engine::update() {
+void Engine::startLoop() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 	}
