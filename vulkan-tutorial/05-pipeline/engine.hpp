@@ -20,6 +20,8 @@ public:
 
 private:
 	const char *appName = "Triangle";
+	const char *vertPath = "./simple.vert.spv";
+	const char *fragPath = "./simple.frag.spv";
 
 	const std::vector<const char*> deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -44,11 +46,33 @@ private:
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 
+	// swap chain
 	VkSwapchainKHR swapChain;
 	std::vector<VkImage> swapChainImages;
 	std::vector<VkImageView> swapChainImageViews;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
+
+	// pipeline
+	VkRenderPass renderPass;
+	VkPipelineLayout pipelineLayout;
+	VkPipeline graphicsPipeline;
+
+	// frame buffers
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+
+	// commands
+	VkCommandPool commandPool;
+	VkCommandBuffer commandBuffer;
+
+	//
+	// methods
+	//
+
+	// file system. used for reading shader binary files.
+	std::vector<char> readFile(const std::string &filepath);
+
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	// heuristic method for choosing one of the possible many Vulkan devices
 	VkPhysicalDevice chooseBestDevice(std::vector<VkPhysicalDevice> devices);

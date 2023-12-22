@@ -5,8 +5,8 @@
 #include <unordered_set>
 #include <set>
 #include <cstdint>
-#include <limits> // Necessary for std::numeric_limits
-#include <algorithm> // Necessary for std::clamp
+#include <limits>
+#include <algorithm>
 /**
  * Initialize everything
  */
@@ -25,10 +25,6 @@ Engine::Engine() {
 	// the fourth param is which monitor to open the window.
 	// the last param is specific to OpenGL. ignore this.
 	window = glfwCreateWindow(512, 512, appName, nullptr, nullptr);
-
-	// shaders
-	auto vertCode = readFile(vertPath);
-	auto fragCode = readFile(fragPath);
 
 	//
 	// Vulkan instance
@@ -253,20 +249,6 @@ VkPhysicalDevice Engine::chooseBestDevice(std::vector<VkPhysicalDevice> devices)
 		}
 	}
 	throw std::runtime_error("No suitable Vulkan device found");
-}
-
-/**
- * Useful for opening the compiled shader binary files.
- */
-std::vector<char> Engine::readFile(const std::string &filepath) {
-	std::ifstream file{filepath, std::ios::ate | std::ios::binary};
-	if (!file.is_open()) {}
-	size_t filesize = (size_t)file.tellg();
-	std::vector<char> buffer(filesize);
-	file.seekg(0);
-	file.read(buffer.data(), filesize);
-	file.close();
-	return buffer;
 }
 
 /**

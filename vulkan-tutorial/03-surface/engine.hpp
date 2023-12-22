@@ -20,8 +20,6 @@ public:
 
 private:
 	const char *appName = "Triangle";
-	const char *vertPath = "./simple.vert.spv";
-	const char *fragPath = "./simple.frag.spv";
 
 	// The cross-platform window visibile to the user
 	GLFWwindow *window;
@@ -41,9 +39,6 @@ private:
 	// device queues are implicitly cleaned up on their own.
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
-
-	// file system. used for reading shader binary files.
-	std::vector<char> readFile(const std::string &filepath);
 
 	// heuristic method for choosing one of the possible many Vulkan devices
 	VkPhysicalDevice chooseBestDevice(std::vector<VkPhysicalDevice> devices);
