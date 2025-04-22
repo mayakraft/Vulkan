@@ -3,8 +3,8 @@
 I'm learning Vulkan. Here are some resources that I'm using:
 
 - 📖 [Vulkan Cookbook by Pawel Lapinski](https://www.packtpub.com/product/vulkan-cookbook/9781786468154)
-- 📺 [Vulkan game engine tutorial by Brendan Galea](https://www.youtube.com/watch?v=Y9U9IE0gVHA&list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR&index=1&pp=iAQB)
 - 💻 [Vulkan Tutorial](https://vulkan-tutorial.com/)
+- 📺 [Vulkan game engine tutorial by Brendan Galea](https://www.youtube.com/watch?v=Y9U9IE0gVHA&list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR&index=1&pp=iAQB)
 - 💻 [Vulkan in 30 minutes](https://renderdoc.org/vulkan-in-30-minutes.html)
 - 💻 [API without secrets](https://www.intel.com/content/www/us/en/developer/articles/training/api-without-secrets-introduction-to-vulkan-preface.html)
 - 💻 [Yet another blog explaining Vulkan synchronization](https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/)
