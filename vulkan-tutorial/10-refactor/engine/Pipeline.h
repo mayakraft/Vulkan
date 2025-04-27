@@ -16,8 +16,8 @@ public:
   VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
   VkRenderPass getRenderPass() const { return renderPass; }
 
-  const char *vertPath = "./simple.vert.spv";
-	const char *fragPath = "./simple.frag.spv";
+  const char *vertPath = "./shaders/simple.vert.spv";
+	const char *fragPath = "./shaders/simple.frag.spv";
 
 private:
   void createRenderPass();

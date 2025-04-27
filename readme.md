@@ -26,20 +26,25 @@ Install [VulkanSDK](https://vulkan.lunarg.com/sdk/home#mac), which installs Molt
 
 ### system environment variables
 
-This is important. For some reason I need to keep running this after opening every new terminal.
+The app will not run unless your system knows the location of the Vulkan library. You can do it two ways, either a quick fix by running these in the terminal window (however, you will need to run them every time you open a new terminal, so it's really not ideal):
 
-```
+```sh
+export VULKAN_SDK=/Library/VulkanSDK/1.3.268.1
 export DYLD_LIBRARY_PATH=/Library/VulkanSDK/1.3.268.1/macOS/lib
 ```
 
-I also ran these. Not sure how important these are.
+or the better solution, modify your `~/.zshrc` or `~/.bashrc` file (re-open a new terminal window):
 
-```
-export VK_ICD_FILENAMES=/Library/VulkanSDK/1.3.268.1/MoltenVK/dylib/macOS/MoltenVK_icd.json
-```
-
-```
+```sh
+# Vulkan SDK setup
 export VULKAN_SDK=/Library/VulkanSDK/1.3.268.1
+export DYLD_LIBRARY_PATH=$VULKAN_SDK/macOS/lib:$DYLD_LIBRARY_PATH
+```
+
+As a footnote, I'm not sure how important this is to set:
+
+```sh
+export VK_ICD_FILENAMES=/Library/VulkanSDK/1.3.268.1/MoltenVK/dylib/macOS/MoltenVK_icd.json
 ```
 
 [source](https://www.reddit.com/r/vulkan/comments/ztxjtw/vulkan_sdk_on_mac_vscode_isnt_working/)
@@ -48,21 +53,21 @@ export VULKAN_SDK=/Library/VulkanSDK/1.3.268.1
 
 my pkgconfig was messed up. I had to install
 
-```
+```sh
 brew install zeromq
 brew install pkgconfig
 ```
 
 Not needed for all dev environments, but I will use GLFW and GLM, so, install these:
 
-```
+```sh
 brew install glfw
 brew install glm
 ```
 
 due to unrelated issues that I fixed, I ran this, but I suspect that I entirely did not need to:
 
-```
+```sh
 brew install glew glfw3
 brew install --cask xquartz
 ```
