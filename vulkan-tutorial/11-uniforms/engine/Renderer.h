@@ -27,7 +27,11 @@ private:
   void createSyncObjects();
   void createVertexBuffer();
   void createIndexBuffer();
+  void createUniformBuffers();
+  void createDescriptorPool();
+  void createDescriptorSets();
   void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+  void updateUniformBuffer(uint32_t currentImage);
 
   void recreateSwapChain();
 
@@ -43,6 +47,13 @@ private:
   VkDeviceMemory vertexBufferMemory;
   VkBuffer indexBuffer;
   VkDeviceMemory indexBufferMemory;
+
+  std::vector<VkBuffer> uniformBuffers;
+  std::vector<VkDeviceMemory> uniformBuffersMemory;
+  std::vector<void*> uniformBuffersMapped;
+
+  VkDescriptorPool descriptorPool;
+  std::vector<VkDescriptorSet> descriptorSets;
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;

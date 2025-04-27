@@ -1,6 +1,7 @@
 #include "SwapChain.h"
 #include <stdexcept>
 #include <algorithm>
+#include <cstdio>
 #include "Renderer.h"
 
 SwapChain::SwapChain(Device& device) : device(device) {
@@ -152,6 +153,7 @@ VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilit
 }
 
 void SwapChain::recreateSwapChain(Renderer& renderer) {
+  printf("recreate swap chain\n");
 	int width = 0;
 	int height = 0;
 	glfwGetFramebufferSize(device.getWindow(), &width, &height);

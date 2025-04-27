@@ -20,6 +20,10 @@ Device::~Device() {
 }
 
 void Device::createInstance(const char* applicationName, const char* engineName) {
+  if (enableValidationLayers && !checkValidationLayerSupport()) {
+    throw std::runtime_error("validation layers required, but not available");
+  }
+
 	// we need to tell the instance some information about our app.
 	// however, pretty much all of this info is optional.
   VkApplicationInfo appInfo{};
@@ -41,16 +45,23 @@ void Device::createInstance(const char* applicationName, const char* engineName)
   const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
   std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+  // extensions.push_back("VK_KHR_portability_subset");
   // see appendex [1]
   extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+  /*extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);*/
 
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   createInfo.pApplicationInfo = &appInfo;
   createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
   createInfo.ppEnabledExtensionNames = extensions.data();
-  // we will come back to this layer count later.
-	createInfo.enabledLayerCount = 0;
+  // validation layers for debugging
+  if (enableValidationLayers) {
+	  createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    createInfo.ppEnabledLayerNames = validationLayers.data();
+  } else {
+	  createInfo.enabledLayerCount = 0;
+  }
 	createInfo.pNext = nullptr;
   createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
@@ -184,7 +195,13 @@ void Device::createLogicalDevice() {
   deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
   deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
   deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
-  deviceCreateInfo.enabledLayerCount = 0;
+  // validation layers for debugging
+  if (enableValidationLayers) {
+	  deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+    deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+  } else {
+	  deviceCreateInfo.enabledLayerCount = 0;
+  }
 
   if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device) != VK_SUCCESS) {
     throw std::runtime_error("failed to create logical device");
@@ -196,6 +213,28 @@ void Device::createLogicalDevice() {
 	// more than one we would increment the number here.
   vkGetDeviceQueue(device, graphicsFamily, 0, &graphicsQueue);
   vkGetDeviceQueue(device, presentFamily, 0, &presentQueue);
+}
+
+bool Device::checkValidationLayerSupport() {
+  uint32_t layerCount;
+  vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+  std::vector<VkLayerProperties> availableLayers(layerCount);
+  vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+  for (const char* layerName : validationLayers) {
+    bool layerFound = false;
+    for (const auto& layerProperties : availableLayers) {
+      if (strcmp(layerName, layerProperties.layerName) == 0) {
+        layerFound = true;
+        break;
+      }
+    }
+    if (!layerFound) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Appendix

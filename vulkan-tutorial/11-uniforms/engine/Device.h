@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_beta.h>
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <set>
@@ -29,6 +30,7 @@ private:
   void createSurface();
   void pickPhysicalDevice();
   void createLogicalDevice();
+  bool checkValidationLayerSupport();
 
   GLFWwindow* window;
 
@@ -41,6 +43,16 @@ private:
   VkQueue presentQueue;
 
   const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
   };
+
+  const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+  };
+
+  #ifdef NDEBUG
+  const bool enableValidationLayers = false;
+  #else
+  const bool enableValidationLayers = true;
+  #endif
 };

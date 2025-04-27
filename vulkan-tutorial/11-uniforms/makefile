@@ -10,6 +10,8 @@ TARGET = bin/app
 
 all: $(TARGET)
 
+# for debugging, add -g
+
 $(TARGET): $(OBJECTS)
 	@mkdir -p bin
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)

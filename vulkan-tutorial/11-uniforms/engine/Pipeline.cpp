@@ -4,10 +4,13 @@
 
 Pipeline::Pipeline(Device& device, SwapChain& swapChain) : device(device), swapChain(swapChain) {
   createRenderPass();
+  createDescriptorSetLayout();
   createGraphicsPipeline();
 }
 
 Pipeline::~Pipeline() {
+  // could happen inside ~Renderer
+  vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
   vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
   vkDestroyPipelineLayout(device.getDevice(), pipelineLayout, nullptr);
   vkDestroyRenderPass(device.getDevice(), renderPass, nullptr);
@@ -42,6 +45,25 @@ void Pipeline::createRenderPass() {
 
   if (vkCreateRenderPass(device.getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
     throw std::runtime_error("failed to create render pass");
+  }
+}
+
+void Pipeline::createDescriptorSetLayout() {
+  VkDescriptorSetLayoutBinding uboLayoutBinding{};
+  uboLayoutBinding.binding = 0;
+  uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  uboLayoutBinding.descriptorCount = 1;
+  uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  // uboLayoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+  uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+  
+  VkDescriptorSetLayoutCreateInfo layoutInfo{};
+  layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layoutInfo.bindingCount = 1;
+  layoutInfo.pBindings = &uboLayoutBinding;
+
+  if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor set layout");
   }
 }
 
@@ -121,7 +143,8 @@ void Pipeline::createGraphicsPipeline() {
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  rasterizer.frontFace = // VK_FRONT_FACE_CLOCKWISE;
+  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
   rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 	rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -169,10 +192,11 @@ void Pipeline::createGraphicsPipeline() {
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0; // Optional
-	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+  // 1 now that we are using uniforms, otherwise this would be 0
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	// pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+	// pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
   if (vkCreatePipelineLayout(device.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout");
