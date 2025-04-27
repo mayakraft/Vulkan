@@ -1,16 +1,24 @@
 include .env
 
 CXX = g++
-CXXFLAGS = -std=c++17 -Iengine -I${VULKAN_SDK}/macOS/include `pkg-config --cflags-only-I glfw3`
-LDFLAGS = -L${VULKAN_SDK}/macOS/lib -lvulkan `pkg-config --static --libs glfw3`
+TARGET = bin/app
 ENGINE_SOURCES = $(wildcard engine/*.cpp)
 SOURCES = $(ENGINE_SOURCES) main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
-TARGET = bin/app
+INCLUDES = -Iengine -I${VULKAN_SDK}/macOS/include `pkg-config --cflags-only-I glfw3`
+LDFLAGS = -L${VULKAN_SDK}/macOS/lib -lvulkan `pkg-config --static --libs glfw3`
+
+# default to debug build
+BUILD ?= debug
+
+# run either by writing `make`, `make BUILD=debug` or `make BUILD=release`
+ifeq ($(BUILD),debug)
+  CXXFLAGS = -std=c++17 -g -O0 -DDEBUG $(INCLUDES)
+else ifeq ($(BUILD),release)
+  CXXFLAGS = -std=c++17 -O3 -DNDEBUG $(INCLUDES)
+endif
 
 all: $(TARGET)
-
-# for debugging, add -g
 
 $(TARGET): $(OBJECTS)
 	@mkdir -p bin

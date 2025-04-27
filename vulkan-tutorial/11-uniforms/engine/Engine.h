@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include "Debug.h"
 #include "Device.h"
 #include "SwapChain.h"
 #include "Pipeline.h"
