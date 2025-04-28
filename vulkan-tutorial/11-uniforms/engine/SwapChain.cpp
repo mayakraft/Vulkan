@@ -55,7 +55,7 @@ void SwapChain::createSwapChain() {
 		imageCount = capabilities.maxImageCount;
 	}
 
-	uint32_t swapQueueFamilyIndices[] = {
+	uint32_t queueFamilyIndices[] = {
 		device.graphicsQueueFamilyIndex,
 		device.presentQueueFamilyIndex
 	};
@@ -68,9 +68,19 @@ void SwapChain::createSwapChain() {
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-	createInfo.queueFamilyIndexCount = 2;
-	createInfo.pQueueFamilyIndices = swapQueueFamilyIndices;
+
+  // on integrated GPUs (MacOS M-series for example), these two
+  // are the same, in which case we need to be explicit and only
+  // set sharing mode to exclusive (which is faster anyway).
+  if (queueFamilyIndices[0] == queueFamilyIndices[1]) {
+    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.queueFamilyIndexCount = 0;
+    createInfo.pQueueFamilyIndices = nullptr;
+  } else {
+    createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+    createInfo.queueFamilyIndexCount = 2;
+    createInfo.pQueueFamilyIndices = queueFamilyIndices;
+  }
 	createInfo.preTransform = capabilities.currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	createInfo.presentMode = presentMode;

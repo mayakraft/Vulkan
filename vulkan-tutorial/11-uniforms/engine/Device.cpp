@@ -105,9 +105,15 @@ void Device::pickPhysicalDevice() {
 	// if there are more than one device, we need to somehow only choose 1.
 	// we will need to write some kind of heuristic method to determine
 	// the best option, or ask the user which they prefer.
+  int count = 1;
   for (const auto& deviceCandidate : devices) {
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(deviceCandidate, &deviceProperties);
+
+    #ifndef NDEBUG
+    std::cout << "[INFO] checking a new device (" << count << "/" << devices.size() << "): " << deviceProperties.deviceName << std::endl;
+    printAvailableDeviceExtensions(deviceCandidate);
+    #endif
 
 		// we don't want "other" or "cpu", anything else is okay.
 		// if you want to require things, like fullDrawIndexUint32, list them here
@@ -119,9 +125,15 @@ void Device::pickPhysicalDevice() {
 			// && deviceFeatures.robustBufferAccess
 			// && deviceFeatures.shaderFloat64
 			// && deviceFeatures.fullDrawIndexUint32
+      // if (checkDeviceExtensionSupport(deviceCandidate)) {
+      //   physicalDevice = deviceCandidate;
+      //   break;
+      // }
       physicalDevice = deviceCandidate;
       break;
     }
+
+    count++;
   }
 
   if (physicalDevice == VK_NULL_HANDLE) {
@@ -235,6 +247,40 @@ bool Device::checkValidationLayerSupport() {
     }
   }
   return true;
+}
+
+bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+  uint32_t extensionCount;
+  vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+  std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+  vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+  std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+  for (const auto& extension : availableExtensions) {
+    requiredExtensions.erase(extension.extensionName);
+  }
+
+  return requiredExtensions.empty();
+}
+
+void Device::printAvailableDeviceExtensions(VkPhysicalDevice device) {
+  uint32_t extensionCount = 0;
+  vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+  if (extensionCount == 0) {
+    std::cout << "[INFO] no device extensions on this device" << std::endl;
+    return;
+  }
+
+  std::vector<VkExtensionProperties> extensions(extensionCount);
+  vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
+
+  std::cout << "[INFO] available device extensions:" << std::endl;
+  for (const auto& extension : extensions) {
+    std::cout << "  - " << extension.extensionName << std::endl;
+  }
 }
 
 // Appendix

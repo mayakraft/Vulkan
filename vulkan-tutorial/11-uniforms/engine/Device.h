@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_beta.h>
 #include <GLFW/glfw3.h>
 #include <vector>
@@ -31,6 +32,8 @@ private:
   void pickPhysicalDevice();
   void createLogicalDevice();
   bool checkValidationLayerSupport();
+  bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+  void printAvailableDeviceExtensions(VkPhysicalDevice device);
 
   GLFWwindow* window;
 
@@ -42,9 +45,19 @@ private:
   VkQueue graphicsQueue;
   VkQueue presentQueue;
 
+  #ifdef __APPLE__
+  const std::vector<const char*> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
+    // this is requested by the validation errors, but not available
+    // on the Apple M1 chip
+    // VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+  };
+  #else
   const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
   };
+  #endif
 
   const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
