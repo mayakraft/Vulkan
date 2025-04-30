@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "Debug.h"
 #include "Device.h"
+#include "Buffers.h"
 #include "SwapChain.h"
 #include "Pipeline.h"
 #include "Renderer.h"
@@ -20,6 +21,7 @@ private:
   GLFWwindow* window;
 
   Device* device;
+  Buffers* buffers;
   SwapChain* swapChain;
   Pipeline* pipeline;
   Renderer* renderer;

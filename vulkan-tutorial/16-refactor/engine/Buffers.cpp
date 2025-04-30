@@ -1,10 +1,39 @@
-#include "ImageUtils.h"
+#include "Buffers.h"
 #include "Device.h"
 #include "vulkan/vulkan_core.h"
 
-namespace ImageUtils {
+Buffers::Buffers(Device& device) : device(device) {
+	createCommandPool();
+}
 
-uint32_t findMemoryType(Device& device, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+Buffers::~Buffers() {
+	vkDestroyCommandPool(device.getDevice(), commandPool, nullptr);
+}
+
+void Buffers::createCommandPool() {
+  VkCommandPoolCreateInfo poolInfo{};
+  poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  poolInfo.queueFamilyIndex = device.graphicsQueueFamilyIndex;
+
+  if (vkCreateCommandPool(device.getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create command pool");
+  }
+}
+
+void Buffers::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+  VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+  VkBufferCopy copyRegion{};
+  copyRegion.srcOffset = 0; // Optional
+  copyRegion.dstOffset = 0; // Optional
+  copyRegion.size = size;
+  vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+  endSingleTimeCommands(commandBuffer);
+}
+
+uint32_t Buffers::findMemoryType(Device& device, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memProperties;
   vkGetPhysicalDeviceMemoryProperties(device.getPhysicalDevice(), &memProperties);
   for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
@@ -15,7 +44,7 @@ uint32_t findMemoryType(Device& device, uint32_t typeFilter, VkMemoryPropertyFla
   throw std::runtime_error("failed to find suitable memory type");
 }
 
-VkFormat findSupportedFormat(
+VkFormat Buffers::findSupportedFormat(
 	Device& device,
 	const std::vector<VkFormat>& candidates,
 	VkImageTiling tiling,
@@ -32,8 +61,8 @@ VkFormat findSupportedFormat(
   throw std::runtime_error("failed to find a supported format");
 }
 
-VkFormat findDepthFormat(Device& device) {
-	return ImageUtils::findSupportedFormat(
+VkFormat Buffers::findDepthFormat(Device& device) {
+	return findSupportedFormat(
 	  device,
 	  {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
     VK_IMAGE_TILING_OPTIMAL,
@@ -41,7 +70,7 @@ VkFormat findDepthFormat(Device& device) {
   );
 }
 
-void createImage(
+void Buffers::createImage(
 	Device& device,
 	uint32_t width,
 	uint32_t height,
@@ -88,7 +117,7 @@ void createImage(
   vkBindImageMemory(device.getDevice(), image, imageMemory, 0);
 }
 
-VkImageView createImageView(
+VkImageView Buffers::createImageView(
 	Device& device,
 	VkImage image,
 	VkFormat format,
@@ -113,7 +142,7 @@ VkImageView createImageView(
   return imageView;
 }
 
-VkCommandBuffer beginSingleTimeCommands(Device& device, VkCommandPool commandPool) {
+VkCommandBuffer Buffers::beginSingleTimeCommands() {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -132,7 +161,7 @@ VkCommandBuffer beginSingleTimeCommands(Device& device, VkCommandPool commandPoo
   return commandBuffer;
 }
 
-void endSingleTimeCommands(Device &device, VkCommandPool commandPool, VkCommandBuffer commandBuffer) {
+void Buffers::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
   vkEndCommandBuffer(commandBuffer);
 
   // execute the command buffer to complete the transfer
@@ -147,15 +176,14 @@ void endSingleTimeCommands(Device &device, VkCommandPool commandPool, VkCommandB
   vkFreeCommandBuffers(device.getDevice(), commandPool, 1, &commandBuffer);
 }
 
-void transitionImageLayout(
+void Buffers::transitionImageLayout(
 	Device& device,
-	VkCommandPool commandPool,
 	VkImage image,
 	VkFormat format,
 	VkImageLayout oldLayout,
 	VkImageLayout newLayout,
 	uint32_t mipLevels) {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
   VkPipelineStageFlags sourceStage;
   VkPipelineStageFlags destinationStage;
 
@@ -196,12 +224,11 @@ void transitionImageLayout(
     1, &barrier
   );
 
-  endSingleTimeCommands(device, commandPool, commandBuffer);
+  endSingleTimeCommands(commandBuffer);
 }
 
-void generateMipmaps(
+void Buffers::generateMipmaps(
 	Device& device,
-	VkCommandPool commandPool,
 	VkImage image,
 	VkFormat imageFormat,
 	uint32_t texWidth,
@@ -215,7 +242,7 @@ void generateMipmaps(
     throw std::runtime_error("texture image format does not support linear blitting");
   }
 
-  VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+  VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -309,17 +336,16 @@ void generateMipmaps(
     1, &barrier
   );
 
-  endSingleTimeCommands(device, commandPool, commandBuffer);
+  endSingleTimeCommands(commandBuffer);
 }
 
-void copyBufferToImage(
+void Buffers::copyBufferToImage(
 	Device& device,
-	VkCommandPool commandPool,
 	VkBuffer buffer,
 	VkImage image,
 	uint32_t width,
 	uint32_t height) {
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
   VkBufferImageCopy region{};
   region.bufferOffset = 0;
@@ -343,7 +369,31 @@ void copyBufferToImage(
     &region
   );
 
-  endSingleTimeCommands(device, commandPool, commandBuffer);
+  endSingleTimeCommands(commandBuffer);
 }
 
+void Buffers::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+  VkBufferCreateInfo bufferInfo{};
+  bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  bufferInfo.size = size;
+  bufferInfo.usage = usage;
+  bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+  if (vkCreateBuffer(device.getDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create buffer");
+  }
+
+  VkMemoryRequirements memRequirements;
+  vkGetBufferMemoryRequirements(device.getDevice(), buffer, &memRequirements);
+
+  VkMemoryAllocateInfo allocInfo{};
+  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocInfo.allocationSize = memRequirements.size;
+  allocInfo.memoryTypeIndex = findMemoryType(device, memRequirements.memoryTypeBits, properties);
+
+  if (vkAllocateMemory(device.getDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+    throw std::runtime_error("failed to allocate buffer memory");
+  }
+
+  vkBindBufferMemory(device.getDevice(), buffer, bufferMemory, 0);
 }
