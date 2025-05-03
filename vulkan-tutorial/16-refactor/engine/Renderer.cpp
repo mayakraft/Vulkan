@@ -24,10 +24,47 @@ bool hasStencilComponent(VkFormat format) {
 }
 
 Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipeline& pipeline)
-  : device(device), swapChain(swapChain), buffers(buffers), pipeline(pipeline) {
+  : device(device),
+    swapChain(swapChain),
+    buffers(buffers),
+    pipeline(pipeline),
+    colorImageNew(
+      device.getDevice(),
+      device.getPhysicalDevice(),
+      swapChain.getSwapChainExtent().width,
+      swapChain.getSwapChainExtent().height,
+      1,
+      device.getMsaaSamples(),
+      swapChain.getSwapChainImageFormat(), // colorFormat,
+      VK_IMAGE_TILING_OPTIMAL,
+      VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    colorImageViewNew(
+      device.getDevice(),
+      colorImageNew.getImage(),
+      swapChain.getSwapChainImageFormat(), // colorFormat,
+      VK_IMAGE_ASPECT_COLOR_BIT,
+      1),
+    depthImageNew(
+      device.getDevice(),
+      device.getPhysicalDevice(),
+      swapChain.getSwapChainExtent().width,
+      swapChain.getSwapChainExtent().height,
+      1,
+      device.getMsaaSamples(),
+      buffers.findDepthFormat(), // depthFormat
+      VK_IMAGE_TILING_OPTIMAL,
+      VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    depthImageViewNew(
+      device.getDevice(),
+      depthImageNew.getImage(),
+      buffers.findDepthFormat(), // depthFormat
+      VK_IMAGE_ASPECT_DEPTH_BIT,
+      1) {
 
-  createColorResources();
-  createDepthResources();
+  // createColorResources();
+  // createDepthResources();
   createFramebuffers();
   createTextureImage();
   createTextureImageView();
@@ -47,14 +84,15 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
 
 Renderer::~Renderer() {
   // color image
-  vkDestroyImageView(device.getDevice(), colorImageView, nullptr);
-  vkDestroyImage(device.getDevice(), colorImage, nullptr);
-  vkFreeMemory(device.getDevice(), colorImageMemory, nullptr);
+  /*delete colorImageNew;*/
+  /*vkDestroyImageView(device.getDevice(), colorImageView, nullptr);*/
+  /*vkDestroyImage(device.getDevice(), colorImage, nullptr);*/
+  /*vkFreeMemory(device.getDevice(), colorImageMemory, nullptr);*/
 
   // depth buffer
-  vkDestroyImageView(device.getDevice(), depthImageView, nullptr);
-  vkDestroyImage(device.getDevice(), depthImage, nullptr);
-  vkFreeMemory(device.getDevice(), depthImageMemory, nullptr);
+  /*vkDestroyImageView(device.getDevice(), depthImageView, nullptr);*/
+  /*vkDestroyImage(device.getDevice(), depthImage, nullptr);*/
+  /*vkFreeMemory(device.getDevice(), depthImageMemory, nullptr);*/
 
   // textures
   vkDestroySampler(device.getDevice(), textureSampler, nullptr);
@@ -88,6 +126,59 @@ Renderer::~Renderer() {
   for (auto framebuffer : swapChainFramebuffers) {
     vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
   }
+}
+
+void Renderer::recreateSwapChain() {
+	swapChain.recreateSwapChain(*this);
+
+  /*delete colorImageNew;*/
+  /*vkDestroyImageView(device.getDevice(), colorImageView, nullptr);*/
+  /*vkDestroyImage(device.getDevice(), colorImage, nullptr);*/
+  /*vkFreeMemory(device.getDevice(), colorImageMemory, nullptr);*/
+
+  /*vkDestroyImageView(device.getDevice(), depthImageView, nullptr);*/
+  /*vkDestroyImage(device.getDevice(), depthImage, nullptr);*/
+  /*vkFreeMemory(device.getDevice(), depthImageMemory, nullptr);*/
+
+  colorImageNew = Image(
+    device.getDevice(),
+    device.getPhysicalDevice(),
+    swapChain.getSwapChainExtent().width,
+    swapChain.getSwapChainExtent().height,
+    1,
+    device.getMsaaSamples(),
+    swapChain.getSwapChainImageFormat(),
+    VK_IMAGE_TILING_OPTIMAL,
+    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+  );
+
+  colorImageViewNew = ImageView(
+    device.getDevice(),
+    colorImageNew.getImage(),
+    swapChain.getSwapChainImageFormat(), // colorFormat,
+    VK_IMAGE_ASPECT_COLOR_BIT,
+    1);
+
+  VkFormat depthFormat = buffers.findDepthFormat();
+
+  depthImageNew = Image(
+    device.getDevice(),
+    device.getPhysicalDevice(),
+    swapChain.getSwapChainExtent().width,
+    swapChain.getSwapChainExtent().height,
+    1,
+    device.getMsaaSamples(),
+    depthFormat,
+    VK_IMAGE_TILING_OPTIMAL,
+    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  depthImageViewNew = ImageView(device.getDevice(), depthImageNew.getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+
+  // createColorResources();
+  // createDepthResources();
+	createFramebuffers();
 }
 
 void Renderer::loadModel() {
@@ -134,8 +225,9 @@ void Renderer::createFramebuffers() {
 
   for (size_t i = 0; i < swapChain.getSwapChainImageViews().size(); i++) {
     std::array<VkImageView, 3> attachments = {
-      colorImageView,
-      depthImageView,
+      // colorImageView,
+      colorImageViewNew.getImageView(),
+      depthImageViewNew.getImageView(),
       swapChain.getSwapChainImageViews()[i],
     };
 
@@ -155,40 +247,42 @@ void Renderer::createFramebuffers() {
 }
 
 void Renderer::createColorResources() {
-  VkFormat colorFormat = swapChain.getSwapChainImageFormat();
+  /*VkFormat colorFormat = swapChain.getSwapChainImageFormat();*/
 
-  buffers.createImage(
-  	device,
-    swapChain.getSwapChainExtent().width,
-    swapChain.getSwapChainExtent().height,
-    1,
-    device.getMsaaSamples(),
-    colorFormat,
-    VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    colorImage,
-    colorImageMemory
-  );
+  // buffers.createImage(
+  /*colorImageNew = Image(*/
+  /*  device.getDevice(),*/
+  /*  device.getPhysicalDevice(),*/
+  /*  swapChain.getSwapChainExtent().width,*/
+  /*  swapChain.getSwapChainExtent().height,*/
+  /*  1,*/
+  /*  device.getMsaaSamples(),*/
+  /*  colorFormat,*/
+  /*  VK_IMAGE_TILING_OPTIMAL,*/
+  /*  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,*/
+  /*  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT*/
+  /*  // colorImage,*/
+  /*  // colorImageMemory*/
+  /*);*/
 
-  colorImageView = buffers.createImageView(device, colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+  // colorImageView = buffers.createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+  /*colorImageView = buffers.createImageView(colorImageNew.getImage(), colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);*/
 }
 
 void Renderer::createDepthResources() {
-  VkFormat depthFormat = buffers.findDepthFormat(device);
-  buffers.createImage(
-    device,
-    swapChain.getSwapChainExtent().width,
-    swapChain.getSwapChainExtent().height,
-    1,
-    device.getMsaaSamples(),
-    depthFormat,
-    VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    depthImage,
-    depthImageMemory);
-  depthImageView = buffers.createImageView(device, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+  /*VkFormat depthFormat = buffers.findDepthFormat();*/
+  /*buffers.createImage(*/
+  /*  swapChain.getSwapChainExtent().width,*/
+  /*  swapChain.getSwapChainExtent().height,*/
+  /*  1,*/
+  /*  device.getMsaaSamples(),*/
+  /*  depthFormat,*/
+  /*  VK_IMAGE_TILING_OPTIMAL,*/
+  /*  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,*/
+  /*  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,*/
+  /*  depthImage,*/
+  /*  depthImageMemory);*/
+  /*depthImageView = buffers.createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);*/
 }
 
 void Renderer::createTextureImage() {
@@ -212,7 +306,6 @@ void Renderer::createTextureImage() {
   stbi_image_free(pixels);
 
   buffers.createImage(
-  	device,
     static_cast<uint32_t>(texWidth),
     static_cast<uint32_t>(texHeight),
     mipLevels,
@@ -225,19 +318,19 @@ void Renderer::createTextureImage() {
     textureImageMemory
   );
 
-  buffers.transitionImageLayout(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-  buffers.copyBufferToImage(device, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+  buffers.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+  buffers.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
   // present from before we added mipmaps
   // transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
 
-  buffers.generateMipmaps(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
+  buffers.generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
 
   vkDestroyBuffer(device.getDevice(), stagingBuffer, nullptr);
   vkFreeMemory(device.getDevice(), stagingBufferMemory, nullptr);
 }
 
 void Renderer::createTextureImageView() {
-  textureImageView = buffers.createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+  textureImageView = buffers.createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
 void Renderer::createTextureSampler() {
@@ -421,22 +514,6 @@ void Renderer::createSyncObjects() {
       throw std::runtime_error("failed to create synchronization objects for a frame");
     }
   }
-}
-
-void Renderer::recreateSwapChain() {
-	swapChain.recreateSwapChain(*this);
-
-  vkDestroyImageView(device.getDevice(), colorImageView, nullptr);
-  vkDestroyImage(device.getDevice(), colorImage, nullptr);
-  vkFreeMemory(device.getDevice(), colorImageMemory, nullptr);
-
-  vkDestroyImageView(device.getDevice(), depthImageView, nullptr);
-  vkDestroyImage(device.getDevice(), depthImage, nullptr);
-  vkFreeMemory(device.getDevice(), depthImageMemory, nullptr);
-
-  createColorResources();
-  createDepthResources();
-	createFramebuffers();
 }
 
 void Renderer::drawFrame() {

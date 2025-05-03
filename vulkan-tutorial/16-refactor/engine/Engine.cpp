@@ -7,7 +7,7 @@ Engine::Engine() {
   device = new Device(window, appName, appName);
   swapChain = new SwapChain(*device);
   buffers = new Buffers(*device);
-  pipeline = new Pipeline(*device, *swapChain);
+  pipeline = new Pipeline(*device, *swapChain, *buffers);
   renderer = new Renderer(*device, *swapChain, *buffers, *pipeline);
 }
 

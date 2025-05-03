@@ -5,6 +5,8 @@
 #include "Device.h"
 #include "SwapChain.h"
 #include "Buffers.h"
+#include "Image.h"
+#include "ImageView.h"
 #include "Pipeline.h"
 #include "Vertex.h"
 
@@ -73,14 +75,18 @@ private:
   VkSampler textureSampler;
 
   // color image
-  VkImage colorImage;
-  VkDeviceMemory colorImageMemory;
-  VkImageView colorImageView;
+  Image colorImageNew;
+  ImageView colorImageViewNew;
+  // VkImage colorImage;
+  // VkDeviceMemory colorImageMemory;
+  // VkImageView colorImageView;
 
   // depth
-  VkImage depthImage;
-  VkDeviceMemory depthImageMemory;
-  VkImageView depthImageView;
+  Image depthImageNew;
+  ImageView depthImageViewNew;
+  /*VkImage depthImage;*/
+  /*VkDeviceMemory depthImageMemory;*/
+  /*VkImageView depthImageView;*/
 
   VkDescriptorPool descriptorPool;
   std::vector<VkDescriptorSet> descriptorSets;

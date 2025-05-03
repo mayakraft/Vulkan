@@ -2,7 +2,7 @@
 #include <fstream>
 #include <stdexcept>
 
-Pipeline::Pipeline(Device& device, SwapChain& swapChain) : device(device), swapChain(swapChain) {
+Pipeline::Pipeline(Device& device, SwapChain& swapChain, Buffers& buffers) : device(device), swapChain(swapChain), buffers(buffers) {
   createRenderPass();
   createDescriptorSetLayout();
   createGraphicsPipeline();
@@ -46,8 +46,7 @@ void Pipeline::createRenderPass() {
   colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
   VkAttachmentDescription depthAttachment{};
-  // issue- "findDepthFormat" is inside Renderer
-  depthAttachment.format = findDepthFormat();
+  depthAttachment.format = buffers.findDepthFormat();
   depthAttachment.samples = device.getMsaaSamples();
   depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -100,7 +99,7 @@ void Pipeline::createDescriptorSetLayout() {
   uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
   // uboLayoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
   uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
-  
+
   VkDescriptorSetLayoutBinding samplerLayoutBinding{};
   samplerLayoutBinding.binding = 1;
   samplerLayoutBinding.descriptorCount = 1;
@@ -112,7 +111,7 @@ void Pipeline::createDescriptorSetLayout() {
     uboLayoutBinding,
     samplerLayoutBinding,
   };
-  
+
   VkDescriptorSetLayoutCreateInfo layoutInfo{};
   layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -199,7 +198,7 @@ void Pipeline::createGraphicsPipeline() {
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = // VK_FRONT_FACE_CLOCKWISE;
+  // rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
   rasterizer.depthBiasConstantFactor = 0.0f; // Optional
@@ -326,27 +325,3 @@ std::vector<char> Pipeline::readFile(const std::string& filename) {
   file.close();
   return buffer;
 }
-
-// copied from Renderer.cpp
-VkFormat Pipeline::findDepthFormat() {
-  return findSupportedFormat(
-    {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-    VK_IMAGE_TILING_OPTIMAL,
-    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-  );
-}
-
-// copied from Renderer.cpp
-VkFormat Pipeline::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-  for (VkFormat format : candidates) {
-    VkFormatProperties props;
-    vkGetPhysicalDeviceFormatProperties(device.getPhysicalDevice(), format, &props);
-    if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
-      return format;
-    } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
-      return format;
-    }
-  }
-  throw std::runtime_error("failed to find a supported format");
-}
-

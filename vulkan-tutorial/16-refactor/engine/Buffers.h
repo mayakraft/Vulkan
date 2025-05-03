@@ -19,21 +19,22 @@ public:
 
   VkCommandPool getCommandPool() const { return commandPool; }
 
-  void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	void createBuffer(
+		VkDeviceSize size,
+		VkBufferUsageFlags usage,
+		VkMemoryPropertyFlags properties,
+		VkBuffer& buffer,
+		VkDeviceMemory& bufferMemory);
 
-	uint32_t findMemoryType(Device& device, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-	// for the depth buffer
-	VkFormat findSupportedFormat(
-		Device& device,
-		const std::vector<VkFormat>& candidates,
-		VkImageTiling tiling,
-		VkFormatFeatureFlags features);
-
-	VkFormat findDepthFormat(Device& device);
+	void copyBufferToImage(
+		VkBuffer buffer,
+		VkImage image,
+		uint32_t width,
+		uint32_t height);
 
 	void createImage(
-		Device& device,
 		uint32_t width,
 		uint32_t height,
 		uint32_t mipLevels, // mipmaps
@@ -46,17 +47,12 @@ public:
 		VkDeviceMemory& imageMemory);
 
 	VkImageView createImageView(
-		Device& device,
 		VkImage image,
 		VkFormat format,
 		VkImageAspectFlags aspectFlags,
 		uint32_t mipLevels);
 
-	VkCommandBuffer beginSingleTimeCommands();
-	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
 	void transitionImageLayout(
-		Device& device,
 		VkImage image,
 		VkFormat format,
 		VkImageLayout oldLayout,
@@ -64,24 +60,22 @@ public:
 		uint32_t mipLevels);
 
 	void generateMipmaps(
-		Device& device,
 		VkImage image,
 		VkFormat imageFormat,
 		uint32_t texWidth,
 		uint32_t texHeight,
 		uint32_t mipLevels);
 
-	void copyBufferToImage(
-		Device& device,
-		VkBuffer buffer,
-		VkImage image,
-		uint32_t width,
-		uint32_t height);
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-	void createBuffer(
-		VkDeviceSize size,
-		VkBufferUsageFlags usage,
-		VkMemoryPropertyFlags properties,
-		VkBuffer& buffer,
-		VkDeviceMemory& bufferMemory);
+	// for the depth buffer
+	VkFormat findSupportedFormat(
+		const std::vector<VkFormat>& candidates,
+		VkImageTiling tiling,
+		VkFormatFeatureFlags features);
+
+	VkFormat findDepthFormat();
+
+	VkCommandBuffer beginSingleTimeCommands();
+	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 };

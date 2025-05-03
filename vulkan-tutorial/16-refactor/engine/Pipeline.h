@@ -5,11 +5,12 @@
 #include <string>
 #include "Device.h"
 #include "SwapChain.h"
+#include "Buffers.h"
 #include "Vertex.h"
 
 class Pipeline {
 public:
-  Pipeline(Device& device, SwapChain& swapChain);
+  Pipeline(Device& device, SwapChain& swapChain, Buffers& buffers);
   ~Pipeline();
 
   VkPipeline getGraphicsPipeline() const { return graphicsPipeline; }
@@ -29,13 +30,10 @@ private:
 
   Device& device;
   SwapChain& swapChain;
+  Buffers& buffers;
 
   VkRenderPass renderPass;
   VkDescriptorSetLayout descriptorSetLayout;
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
-
-  // both of these are duplicated from Renderer class
-  VkFormat findDepthFormat();
-  VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 };
