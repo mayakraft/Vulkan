@@ -28,44 +28,8 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
     swapChain(swapChain),
     buffers(buffers),
     pipeline(pipeline),
-    colorImageNew(
-      device.getDevice(),
-      device.getPhysicalDevice(),
-      swapChain.getSwapChainExtent().width,
-      swapChain.getSwapChainExtent().height,
-      1,
-      device.getMsaaSamples(),
-      swapChain.getSwapChainImageFormat(), // colorFormat,
-      VK_IMAGE_TILING_OPTIMAL,
-      VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    colorImageViewNew(
-      device.getDevice(),
-      colorImageNew.getImage(),
-      swapChain.getSwapChainImageFormat(), // colorFormat,
-      VK_IMAGE_ASPECT_COLOR_BIT,
-      1),
-    depthImageNew(
-      device.getDevice(),
-      device.getPhysicalDevice(),
-      swapChain.getSwapChainExtent().width,
-      swapChain.getSwapChainExtent().height,
-      1,
-      device.getMsaaSamples(),
-      buffers.findDepthFormat(), // depthFormat
-      VK_IMAGE_TILING_OPTIMAL,
-      VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    depthImageViewNew(
-      device.getDevice(),
-      depthImageNew.getImage(),
-      buffers.findDepthFormat(), // depthFormat
-      VK_IMAGE_ASPECT_DEPTH_BIT,
-      1) {
+    swapChainResources(device, swapChain, pipeline, buffers) {
 
-  // createColorResources();
-  // createDepthResources();
-  createFramebuffers();
   createTextureImage();
   createTextureImageView();
   createTextureSampler();
@@ -122,63 +86,11 @@ Renderer::~Renderer() {
   }
 
   // vkDestroyCommandPool(device.getDevice(), commandPool, nullptr);
-
-  for (auto framebuffer : swapChainFramebuffers) {
-    vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
-  }
 }
 
 void Renderer::recreateSwapChain() {
 	swapChain.recreateSwapChain(*this);
-
-  /*delete colorImageNew;*/
-  /*vkDestroyImageView(device.getDevice(), colorImageView, nullptr);*/
-  /*vkDestroyImage(device.getDevice(), colorImage, nullptr);*/
-  /*vkFreeMemory(device.getDevice(), colorImageMemory, nullptr);*/
-
-  /*vkDestroyImageView(device.getDevice(), depthImageView, nullptr);*/
-  /*vkDestroyImage(device.getDevice(), depthImage, nullptr);*/
-  /*vkFreeMemory(device.getDevice(), depthImageMemory, nullptr);*/
-
-  colorImageNew = Image(
-    device.getDevice(),
-    device.getPhysicalDevice(),
-    swapChain.getSwapChainExtent().width,
-    swapChain.getSwapChainExtent().height,
-    1,
-    device.getMsaaSamples(),
-    swapChain.getSwapChainImageFormat(),
-    VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-  );
-
-  colorImageViewNew = ImageView(
-    device.getDevice(),
-    colorImageNew.getImage(),
-    swapChain.getSwapChainImageFormat(), // colorFormat,
-    VK_IMAGE_ASPECT_COLOR_BIT,
-    1);
-
-  VkFormat depthFormat = buffers.findDepthFormat();
-
-  depthImageNew = Image(
-    device.getDevice(),
-    device.getPhysicalDevice(),
-    swapChain.getSwapChainExtent().width,
-    swapChain.getSwapChainExtent().height,
-    1,
-    device.getMsaaSamples(),
-    depthFormat,
-    VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-  depthImageViewNew = ImageView(device.getDevice(), depthImageNew.getImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
-  // createColorResources();
-  // createDepthResources();
-	createFramebuffers();
+  swapChainResources.recreateSwapChain();
 }
 
 void Renderer::loadModel() {
@@ -218,71 +130,6 @@ void Renderer::loadModel() {
       indices.push_back(uniqueVertices[vertex]);
     }
   }
-}
-
-void Renderer::createFramebuffers() {
-  swapChainFramebuffers.resize(swapChain.getSwapChainImageViews().size());
-
-  for (size_t i = 0; i < swapChain.getSwapChainImageViews().size(); i++) {
-    std::array<VkImageView, 3> attachments = {
-      // colorImageView,
-      colorImageViewNew.getImageView(),
-      depthImageViewNew.getImageView(),
-      swapChain.getSwapChainImageViews()[i],
-    };
-
-    VkFramebufferCreateInfo framebufferInfo{};
-    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = pipeline.getRenderPass();
-    framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    framebufferInfo.pAttachments = attachments.data();
-    framebufferInfo.width = swapChain.getSwapChainExtent().width;
-    framebufferInfo.height = swapChain.getSwapChainExtent().height;
-    framebufferInfo.layers = 1;
-
-    if (vkCreateFramebuffer(device.getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create framebuffer");
-    }
-  }
-}
-
-void Renderer::createColorResources() {
-  /*VkFormat colorFormat = swapChain.getSwapChainImageFormat();*/
-
-  // buffers.createImage(
-  /*colorImageNew = Image(*/
-  /*  device.getDevice(),*/
-  /*  device.getPhysicalDevice(),*/
-  /*  swapChain.getSwapChainExtent().width,*/
-  /*  swapChain.getSwapChainExtent().height,*/
-  /*  1,*/
-  /*  device.getMsaaSamples(),*/
-  /*  colorFormat,*/
-  /*  VK_IMAGE_TILING_OPTIMAL,*/
-  /*  VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,*/
-  /*  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT*/
-  /*  // colorImage,*/
-  /*  // colorImageMemory*/
-  /*);*/
-
-  // colorImageView = buffers.createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-  /*colorImageView = buffers.createImageView(colorImageNew.getImage(), colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);*/
-}
-
-void Renderer::createDepthResources() {
-  /*VkFormat depthFormat = buffers.findDepthFormat();*/
-  /*buffers.createImage(*/
-  /*  swapChain.getSwapChainExtent().width,*/
-  /*  swapChain.getSwapChainExtent().height,*/
-  /*  1,*/
-  /*  device.getMsaaSamples(),*/
-  /*  depthFormat,*/
-  /*  VK_IMAGE_TILING_OPTIMAL,*/
-  /*  VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,*/
-  /*  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,*/
-  /*  depthImage,*/
-  /*  depthImageMemory);*/
-  /*depthImageView = buffers.createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);*/
 }
 
 void Renderer::createTextureImage() {
@@ -537,7 +384,6 @@ void Renderer::drawFrame() {
   vkResetCommandBuffer(commandBuffers[currentFrame], 0);
   recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
-
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -601,7 +447,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   renderPassInfo.renderPass = pipeline.getRenderPass();
-  renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+  renderPassInfo.framebuffer = swapChainResources.getSwapChainFramebuffers()[imageIndex];
   renderPassInfo.renderArea.offset = {0, 0};
   renderPassInfo.renderArea.extent = swapChain.getSwapChainExtent();
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

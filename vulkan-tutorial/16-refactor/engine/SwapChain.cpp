@@ -177,9 +177,9 @@ void SwapChain::recreateSwapChain(Renderer& renderer) {
 	vkDeviceWaitIdle(device.getDevice());
 
 	// cleanup swap chain
-	for (auto framebuffer : renderer.getSwapChainFramebuffers()) {
-		vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
-	}
+	/*for (auto framebuffer : renderer.getSwapChainFramebuffers()) {*/
+	/*	vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);*/
+	/*}*/
 	for (auto imageView : swapChainImageViews) {
 		vkDestroyImageView(device.getDevice(), imageView, nullptr);
 	}

@@ -20,8 +20,8 @@ public:
 		VkPhysicalDevice physicalDevice,
 		uint32_t width,
 		uint32_t height,
-		uint32_t mipLevels,
-		VkSampleCountFlagBits numSamples,
+		uint32_t mipLevels, // mipmaps
+		VkSampleCountFlagBits numSamples, // multisampling
 		VkFormat format,
 		VkImageTiling tiling,
 		VkImageUsageFlags usage,

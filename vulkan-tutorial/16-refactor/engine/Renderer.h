@@ -9,6 +9,7 @@
 #include "ImageView.h"
 #include "Pipeline.h"
 #include "Vertex.h"
+#include "SwapChainResources.h"
 
 class Renderer {
 public:
@@ -17,7 +18,7 @@ public:
 
   void drawFrame();
 
-  std::vector<VkFramebuffer> getSwapChainFramebuffers() const { return swapChainFramebuffers; }
+  // std::vector<VkFramebuffer> getSwapChainFramebuffers() const { return swapChainFramebuffers; }
 
   bool framebufferResized = false;
 
@@ -52,8 +53,10 @@ private:
   Buffers& buffers;
   Pipeline& pipeline;
 
+  SwapChainResources swapChainResources;
+
   std::vector<VkCommandBuffer> commandBuffers;
-  std::vector<VkFramebuffer> swapChainFramebuffers;
+  // std::vector<VkFramebuffer> swapChainFramebuffers;
 
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
@@ -73,20 +76,6 @@ private:
   VkDeviceMemory textureImageMemory;
   VkImageView textureImageView;
   VkSampler textureSampler;
-
-  // color image
-  Image colorImageNew;
-  ImageView colorImageViewNew;
-  // VkImage colorImage;
-  // VkDeviceMemory colorImageMemory;
-  // VkImageView colorImageView;
-
-  // depth
-  Image depthImageNew;
-  ImageView depthImageViewNew;
-  /*VkImage depthImage;*/
-  /*VkDeviceMemory depthImageMemory;*/
-  /*VkImageView depthImageView;*/
 
   VkDescriptorPool descriptorPool;
   std::vector<VkDescriptorSet> descriptorSets;
