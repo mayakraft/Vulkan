@@ -26,7 +26,10 @@ public:
 		VkBuffer& buffer,
 		VkDeviceMemory& bufferMemory);
 
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	void copyBuffer(
+    VkBuffer srcBuffer,
+    VkBuffer dstBuffer,
+    VkDeviceSize size);
 
 	void copyBufferToImage(
 		VkBuffer buffer,
@@ -66,7 +69,9 @@ public:
 		uint32_t texHeight,
 		uint32_t mipLevels);
 
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	uint32_t findMemoryType(
+    uint32_t typeFilter,
+    VkMemoryPropertyFlags properties);
 
 	// for the depth buffer
 	VkFormat findSupportedFormat(

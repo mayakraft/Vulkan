@@ -13,8 +13,6 @@ private:
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 public:
-  Image() = default;
-
   Image(
 		VkDevice device,
 		VkPhysicalDevice physicalDevice,
@@ -29,16 +27,14 @@ public:
 
   ~Image();
 
+  VkImage getImage() const { return image; }
+
   // Delete copy semantics
 	Image(const Image&) = delete;
 	Image& operator=(const Image&) = delete;
-
 	// Custom move constructor
 	Image(Image&& other) noexcept;
-
 	// Custom move assignment
 	Image& operator=(Image&& other) noexcept;
-
-  VkImage getImage() const { return image; }
 };
 

@@ -18,8 +18,6 @@ public:
 
   void drawFrame();
 
-  // std::vector<VkFramebuffer> getSwapChainFramebuffers() const { return swapChainFramebuffers; }
-
   bool framebufferResized = false;
 
 private:
@@ -52,11 +50,9 @@ private:
   SwapChain& swapChain;
   Buffers& buffers;
   Pipeline& pipeline;
-
   SwapChainResources swapChainResources;
 
   std::vector<VkCommandBuffer> commandBuffers;
-  // std::vector<VkFramebuffer> swapChainFramebuffers;
 
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;

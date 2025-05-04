@@ -4,9 +4,6 @@
 #include <vector>
 #include "Device.h"
 
-// forward declaration for recreateSwapChain()
-class Renderer;
-
 class SwapChain {
 public:
   SwapChain(Device& device);
@@ -15,11 +12,14 @@ public:
   VkSwapchainKHR getSwapChain() const { return swapChain; }
   VkFormat getSwapChainImageFormat() const { return swapChainImageFormat; }
   VkExtent2D getSwapChainExtent() const { return swapChainExtent; }
-  const std::vector<VkImageView>& getSwapChainImageViews() const { return swapChainImageViews; }
+  const std::vector<VkImageView>& getSwapChainImageViews() const {
+    return swapChainImageViews;
+  }
 
-  void recreateSwapChain(Renderer& renderer);
+  void recreateSwapChain();
 
 private:
+  void deallocAll();
   void createSwapChain();
   void createImageViews();
 
@@ -31,7 +31,13 @@ private:
   VkFormat swapChainImageFormat;
   VkExtent2D swapChainExtent;
 
-  VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-  VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-  VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+  VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+    const std::vector<VkSurfaceFormatKHR>& availableFormats
+  );
+  VkPresentModeKHR chooseSwapPresentMode(
+    const std::vector<VkPresentModeKHR>& availablePresentModes
+  );
+  VkExtent2D chooseSwapExtent(
+    const VkSurfaceCapabilitiesKHR& capabilities
+  );
 };

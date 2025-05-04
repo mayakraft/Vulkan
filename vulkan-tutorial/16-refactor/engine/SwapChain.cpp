@@ -10,10 +10,33 @@ SwapChain::SwapChain(Device& device) : device(device) {
 }
 
 SwapChain::~SwapChain() {
+  deallocAll();
+}
+
+void SwapChain::deallocAll() {
   for (auto imageView : swapChainImageViews) {
     vkDestroyImageView(device.getDevice(), imageView, nullptr);
   }
   vkDestroySwapchainKHR(device.getDevice(), swapChain, nullptr);
+}
+
+void SwapChain::recreateSwapChain() {
+  DEBUG_LOG("recreate swap chain");
+	int width = 0;
+	int height = 0;
+	glfwGetFramebufferSize(device.getWindow(), &width, &height);
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(device.getWindow(), &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(device.getDevice());
+
+  deallocAll();
+
+	// recreate swap chain
+	createSwapChain();
+	createImageViews();
 }
 
 void SwapChain::createSwapChain() {
@@ -164,31 +187,3 @@ VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilit
   }
 }
 
-void SwapChain::recreateSwapChain(Renderer& renderer) {
-  DEBUG_LOG("recreate swap chain");
-	int width = 0;
-	int height = 0;
-	glfwGetFramebufferSize(device.getWindow(), &width, &height);
-	while (width == 0 || height == 0) {
-		glfwGetFramebufferSize(device.getWindow(), &width, &height);
-		glfwWaitEvents();
-	}
-
-	vkDeviceWaitIdle(device.getDevice());
-
-	// cleanup swap chain
-	/*for (auto framebuffer : renderer.getSwapChainFramebuffers()) {*/
-	/*	vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);*/
-	/*}*/
-	for (auto imageView : swapChainImageViews) {
-		vkDestroyImageView(device.getDevice(), imageView, nullptr);
-	}
-	vkDestroySwapchainKHR(device.getDevice(), swapChain, nullptr);
-
-	// recreate swap chain
-	createSwapChain();
-	createImageViews();
-	// you cannot call SwapChain.recreateSwapChain without telling the renderer
-	// to call createFramebuffers (see renderer.recreateSwapChain)
-	// renderer.recreateSwapChain();
-}

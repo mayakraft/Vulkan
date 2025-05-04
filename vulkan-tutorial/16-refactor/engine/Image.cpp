@@ -56,6 +56,7 @@ Image::~Image() {
     vkFreeMemory(device, memory, nullptr);
   }
 }
+
 // Custom move constructor
 Image::Image(Image&& other) noexcept
 	: device(other.device),

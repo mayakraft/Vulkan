@@ -28,7 +28,15 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
     swapChain(swapChain),
     buffers(buffers),
     pipeline(pipeline),
-    swapChainResources(device, swapChain, pipeline, buffers) {
+    swapChainResources(
+      device.getDevice(),
+      device.getPhysicalDevice(),
+      swapChain.getSwapChainExtent(),
+      device.getMsaaSamples(),
+      swapChain.getSwapChainImageFormat(),
+      buffers.findDepthFormat(),
+      swapChain.getSwapChainImageViews(),
+      pipeline.getRenderPass()) {
 
   createTextureImage();
   createTextureImageView();
@@ -47,17 +55,6 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
 }
 
 Renderer::~Renderer() {
-  // color image
-  /*delete colorImageNew;*/
-  /*vkDestroyImageView(device.getDevice(), colorImageView, nullptr);*/
-  /*vkDestroyImage(device.getDevice(), colorImage, nullptr);*/
-  /*vkFreeMemory(device.getDevice(), colorImageMemory, nullptr);*/
-
-  // depth buffer
-  /*vkDestroyImageView(device.getDevice(), depthImageView, nullptr);*/
-  /*vkDestroyImage(device.getDevice(), depthImage, nullptr);*/
-  /*vkFreeMemory(device.getDevice(), depthImageMemory, nullptr);*/
-
   // textures
   vkDestroySampler(device.getDevice(), textureSampler, nullptr);
   vkDestroyImageView(device.getDevice(), textureImageView, nullptr);
@@ -76,21 +73,25 @@ Renderer::~Renderer() {
     vkFreeMemory(device.getDevice(), uniformBuffersMemory[i], nullptr);
   }
   vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
-  // freeing a pipeline variable from renderer, due to order
-  // vkDestroyDescriptorSetLayout(device.getDevice(), pipeline.getDescriptorSetLayout(), nullptr);
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     vkDestroySemaphore(device.getDevice(), renderFinishedSemaphores[i], nullptr);
     vkDestroySemaphore(device.getDevice(), imageAvailableSemaphores[i], nullptr);
     vkDestroyFence(device.getDevice(), inFlightFences[i], nullptr);
   }
-
-  // vkDestroyCommandPool(device.getDevice(), commandPool, nullptr);
 }
 
 void Renderer::recreateSwapChain() {
-	swapChain.recreateSwapChain(*this);
-  swapChainResources.recreateSwapChain();
+	swapChain.recreateSwapChain();
+  swapChainResources = SwapChainResources(
+    device.getDevice(),
+    device.getPhysicalDevice(),
+    swapChain.getSwapChainExtent(),
+    device.getMsaaSamples(),
+    swapChain.getSwapChainImageFormat(),
+    buffers.findDepthFormat(),
+    swapChain.getSwapChainImageViews(),
+    pipeline.getRenderPass());
 }
 
 void Renderer::loadModel() {
@@ -437,6 +438,8 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     throw std::runtime_error("failed to begin recording command buffer");
   }
 
+  VkExtent2D swapChainExtent = swapChain.getSwapChainExtent();
+
   // before adding depth buffer, we only needed the one clear value
   // VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
@@ -449,7 +452,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   renderPassInfo.renderPass = pipeline.getRenderPass();
   renderPassInfo.framebuffer = swapChainResources.getSwapChainFramebuffers()[imageIndex];
   renderPassInfo.renderArea.offset = {0, 0};
-  renderPassInfo.renderArea.extent = swapChain.getSwapChainExtent();
+  renderPassInfo.renderArea.extent = swapChainExtent;
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
   renderPassInfo.pClearValues = clearValues.data();
 
@@ -460,15 +463,15 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapChain.getSwapChainExtent().width);
-	viewport.height = static_cast<float>(swapChain.getSwapChainExtent().height);
+	viewport.width = static_cast<float>(swapChainExtent.width);
+	viewport.height = static_cast<float>(swapChainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
-	scissor.extent = swapChain.getSwapChainExtent();
+	scissor.extent = swapChainExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	VkBuffer vertexBuffers[] = {vertexBuffer};
@@ -502,3 +505,4 @@ void Renderer::updateUniformBuffer(uint32_t currentImage) {
 
   memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
+

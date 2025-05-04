@@ -1,42 +1,54 @@
 #include "SwapChainResources.h"
 
-SwapChainResources::SwapChainResources(Device& device, SwapChain& swapChain, Pipeline& pipeline, Buffers& buffers)
+SwapChainResources::SwapChainResources(
+  VkDevice device,
+  VkPhysicalDevice physicalDevice,
+  VkExtent2D swapChainExtent,
+  VkSampleCountFlagBits msaaSamples,
+  VkFormat colorFormat,
+  VkFormat depthFormat,
+  const std::vector<VkImageView>& swapChainImageViews,
+  VkRenderPass renderPass)
   : device(device),
-    swapChain(swapChain),
-    pipeline(pipeline),
-    buffers(buffers),
-    colorImageNew(
-      device.getDevice(),
-      device.getPhysicalDevice(),
-      swapChain.getSwapChainExtent().width,
-      swapChain.getSwapChainExtent().height,
+    physicalDevice(physicalDevice),
+    swapChainExtent(swapChainExtent),
+    msaaSamples(msaaSamples),
+    colorFormat(colorFormat),
+    depthFormat(depthFormat),
+    swapChainImageViews(swapChainImageViews),
+    renderPass(renderPass),
+    colorImage(
+      device,
+      physicalDevice,
+      swapChainExtent.width,
+      swapChainExtent.height,
       1,
-      device.getMsaaSamples(),
-      swapChain.getSwapChainImageFormat(), // colorFormat,
+      msaaSamples,
+      colorFormat,
       VK_IMAGE_TILING_OPTIMAL,
       VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    colorImageViewNew(
-      device.getDevice(),
-      colorImageNew.getImage(),
-      swapChain.getSwapChainImageFormat(), // colorFormat,
+    colorImageView(
+      device,
+      colorImage.getImage(),
+      colorFormat,
       VK_IMAGE_ASPECT_COLOR_BIT,
       1),
-    depthImageNew(
-      device.getDevice(),
-      device.getPhysicalDevice(),
-      swapChain.getSwapChainExtent().width,
-      swapChain.getSwapChainExtent().height,
+    depthImage(
+      device,
+      physicalDevice,
+      swapChainExtent.width,
+      swapChainExtent.height,
       1,
-      device.getMsaaSamples(),
-      buffers.findDepthFormat(), // depthFormat
+      msaaSamples,
+      depthFormat,
       VK_IMAGE_TILING_OPTIMAL,
       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    depthImageViewNew(
-      device.getDevice(),
-      depthImageNew.getImage(),
-      buffers.findDepthFormat(), // depthFormat
+    depthImageView(
+      device,
+      depthImage.getImage(),
+      depthFormat,
       VK_IMAGE_ASPECT_DEPTH_BIT,
       1) {
 
@@ -45,30 +57,32 @@ SwapChainResources::SwapChainResources(Device& device, SwapChain& swapChain, Pip
 
 SwapChainResources::~SwapChainResources() {
   for (auto framebuffer : swapChainFramebuffers) {
-    vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
+    if (framebuffer != VK_NULL_HANDLE) {
+      vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
   }
 }
 
 void SwapChainResources::createFramebuffers() {
-  swapChainFramebuffers.resize(swapChain.getSwapChainImageViews().size());
+  swapChainFramebuffers.resize(swapChainImageViews.size());
 
-  for (size_t i = 0; i < swapChain.getSwapChainImageViews().size(); i++) {
+  for (size_t i = 0; i < swapChainImageViews.size(); i++) {
     std::array<VkImageView, 3> attachments = {
-      colorImageViewNew.getImageView(),
-      depthImageViewNew.getImageView(),
-      swapChain.getSwapChainImageViews()[i],
+      colorImageView.getImageView(),
+      depthImageView.getImageView(),
+      swapChainImageViews[i],
     };
 
     VkFramebufferCreateInfo framebufferInfo{};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = pipeline.getRenderPass();
+    framebufferInfo.renderPass = renderPass;
     framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     framebufferInfo.pAttachments = attachments.data();
-    framebufferInfo.width = swapChain.getSwapChainExtent().width;
-    framebufferInfo.height = swapChain.getSwapChainExtent().height;
+    framebufferInfo.width = swapChainExtent.width;
+    framebufferInfo.height = swapChainExtent.height;
     framebufferInfo.layers = 1;
 
-    if (vkCreateFramebuffer(device.getDevice(), &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+    if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
       throw std::runtime_error("failed to create framebuffer");
     }
   }
@@ -78,50 +92,96 @@ void SwapChainResources::recreateSwapChain() {
 	// swapChain.recreateSwapChain(*this);
 
 	for (auto framebuffer : swapChainFramebuffers) {
-		vkDestroyFramebuffer(device.getDevice(), framebuffer, nullptr);
+		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
 
-  colorImageNew = Image(
-    device.getDevice(),
-    device.getPhysicalDevice(),
-    swapChain.getSwapChainExtent().width,
-    swapChain.getSwapChainExtent().height,
+  colorImage = Image(
+    device,
+    physicalDevice,
+    swapChainExtent.width,
+    swapChainExtent.height,
     1,
-    device.getMsaaSamples(),
-    swapChain.getSwapChainImageFormat(),
+    msaaSamples,
+    colorFormat,
     VK_IMAGE_TILING_OPTIMAL,
     VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
   );
 
-  colorImageViewNew = ImageView(
-    device.getDevice(),
-    colorImageNew.getImage(),
-    swapChain.getSwapChainImageFormat(), // colorFormat,
+  colorImageView = ImageView(
+    device,
+    colorImage.getImage(),
+    colorFormat,
     VK_IMAGE_ASPECT_COLOR_BIT,
     1);
 
-  VkFormat depthFormat = buffers.findDepthFormat();
-
-  depthImageNew = Image(
-    device.getDevice(),
-    device.getPhysicalDevice(),
-    swapChain.getSwapChainExtent().width,
-    swapChain.getSwapChainExtent().height,
+  depthImage = Image(
+    device,
+    physicalDevice,
+    swapChainExtent.width,
+    swapChainExtent.height,
     1,
-    device.getMsaaSamples(),
+    msaaSamples,
     depthFormat,
     VK_IMAGE_TILING_OPTIMAL,
     VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-  depthImageViewNew = ImageView(
-    device.getDevice(),
-    depthImageNew.getImage(),
+  depthImageView = ImageView(
+    device,
+    depthImage.getImage(),
     depthFormat,
     VK_IMAGE_ASPECT_DEPTH_BIT,
     1);
 
 	createFramebuffers();
+}
+
+SwapChainResources::SwapChainResources(SwapChainResources&& other) noexcept
+  : device(other.device),
+    physicalDevice(other.physicalDevice),
+    swapChainExtent(other.swapChainExtent),
+    msaaSamples(other.msaaSamples),
+    colorFormat(other.colorFormat),
+    depthFormat(other.depthFormat),
+    swapChainImageViews(other.swapChainImageViews),
+    renderPass(other.renderPass),
+    colorImage(std::move(other.colorImage)),
+    colorImageView(std::move(other.colorImageView)),
+    depthImage(std::move(other.depthImage)),
+    depthImageView(std::move(other.depthImageView)),
+    swapChainFramebuffers(std::move(other.swapChainFramebuffers)) {
+
+  // Clear other's framebuffers so it doesn't try to destroy them
+  other.swapChainFramebuffers.clear();
+}
+
+SwapChainResources& SwapChainResources::operator=(SwapChainResources&& other) noexcept {
+  if (this != &other) {
+    // Clean up existing framebuffers
+    for (auto framebuffer : swapChainFramebuffers) {
+      vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
+
+    device = other.device;
+    physicalDevice = other.physicalDevice;
+    swapChainExtent = other.swapChainExtent;
+    msaaSamples = other.msaaSamples;
+    colorFormat = other.colorFormat;
+    depthFormat = other.depthFormat;
+    renderPass = other.renderPass;
+    // Note: it's safe to assign a reference to a const vector since we're not owning it
+    const_cast<std::vector<VkImageView>&>(swapChainImageViews) = other.swapChainImageViews;
+
+    colorImage = std::move(other.colorImage);
+    colorImageView = std::move(other.colorImageView);
+    depthImage = std::move(other.depthImage);
+    depthImageView = std::move(other.depthImageView);
+    swapChainFramebuffers = std::move(other.swapChainFramebuffers);
+
+    // Clear other's framebuffers so it doesn't try to destroy them
+    other.swapChainFramebuffers.clear();
+  }
+  return *this;
 }
 

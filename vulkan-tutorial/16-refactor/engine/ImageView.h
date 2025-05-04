@@ -10,8 +10,6 @@ private:
   VkImageView imageView = VK_NULL_HANDLE;
 
 public:
-  ImageView() = default;
-
   ImageView(
 		VkDevice device,
     VkImage image,
@@ -20,6 +18,8 @@ public:
     uint32_t mipLevels);
 
   ~ImageView();
+
+  VkImageView getImageView() const { return imageView; }
 
   // Delete copy semantics
 	ImageView(const ImageView&) = delete;
@@ -30,7 +30,5 @@ public:
 
 	// Custom move assignment
 	ImageView& operator=(ImageView&& other) noexcept;
-
-  VkImageView getImageView() const { return imageView; }
 };
 

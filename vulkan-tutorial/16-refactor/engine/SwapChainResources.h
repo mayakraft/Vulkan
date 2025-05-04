@@ -2,39 +2,57 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include "Device.h"
-#include "SwapChain.h"
-#include "Pipeline.h"
-#include "Buffers.h"
 #include "Image.h"
 #include "ImageView.h"
 
 class SwapChainResources {
 private:
-  Device& device;
-  SwapChain& swapChain;
-  Pipeline& pipeline;
-  Buffers& buffers;
+  VkDevice device;
+  VkPhysicalDevice physicalDevice;
+  VkExtent2D swapChainExtent;
+  VkSampleCountFlagBits msaaSamples;
+  VkFormat colorFormat;
+  VkFormat depthFormat;
+  VkRenderPass renderPass;
+  const std::vector<VkImageView>& swapChainImageViews;
 
   // color image
-  Image colorImageNew;
-  ImageView colorImageViewNew;
+  Image colorImage;
+  ImageView colorImageView;
 
   // depth
-  Image depthImageNew;
-  ImageView depthImageViewNew;
+  Image depthImage;
+  ImageView depthImageView;
 
   // framebuffers
   std::vector<VkFramebuffer> swapChainFramebuffers;
 
 public:
-  SwapChainResources(Device& device, SwapChain& swapChain, Pipeline& pipeline, Buffers& buffers);
+  SwapChainResources(
+    VkDevice device,
+    VkPhysicalDevice physicalDevice,
+    VkExtent2D swapChainExtent,
+    VkSampleCountFlagBits msaaSamples,
+    VkFormat colorFormat,
+    VkFormat depthFormat,
+    const std::vector<VkImageView>& swapChainImageViews,
+    VkRenderPass renderPass);
 
   ~SwapChainResources();
 
-  std::vector<VkFramebuffer> getSwapChainFramebuffers() const { return swapChainFramebuffers; }
+  std::vector<VkFramebuffer> getSwapChainFramebuffers() const {
+    return swapChainFramebuffers;
+  }
 
   void createFramebuffers();
   void recreateSwapChain();
+
+  // Delete copy semantics
+  SwapChainResources(const SwapChainResources&) = delete;
+  SwapChainResources& operator=(const SwapChainResources&) = delete;
+	// Custom move constructor
+  SwapChainResources(SwapChainResources&& other) noexcept;
+	// Custom move assignment
+  SwapChainResources& operator=(SwapChainResources&& other) noexcept;
 };
 
