@@ -1,15 +1,12 @@
 #pragma once
 
-#include "vulkan/vulkan_core.h"
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 #include <vector>
 
 class Device;
 
 class Buffers {
-private:
-	Device& device;
-
 public:
 	Buffers(Device& device): device(device) {}
   ~Buffers() {}
@@ -64,9 +61,13 @@ public:
 		uint32_t texHeight,
 		uint32_t mipLevels);
 
-	uint32_t findMemoryType(
-    uint32_t typeFilter,
-    VkMemoryPropertyFlags properties);
+	VkFormat findDepthFormat();
+
+	VkCommandBuffer beginSingleTimeCommands();
+	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+private:
+	Device& device;
 
 	// for the depth buffer
 	VkFormat findSupportedFormat(
@@ -74,8 +75,9 @@ public:
 		VkImageTiling tiling,
 		VkFormatFeatureFlags features);
 
-	VkFormat findDepthFormat();
-
-	VkCommandBuffer beginSingleTimeCommands();
-	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+  // this is duplicated in Image.h
+	uint32_t findMemoryType(
+    uint32_t typeFilter,
+    VkMemoryPropertyFlags properties);
 };
+

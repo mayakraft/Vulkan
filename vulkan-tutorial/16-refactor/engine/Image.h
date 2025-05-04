@@ -4,14 +4,6 @@
 #include <cstdint>
 
 class Image {
-private:
-	VkDevice device;
-	VkPhysicalDevice physicalDevice;
-  VkImage image = VK_NULL_HANDLE;
-  VkDeviceMemory memory = VK_NULL_HANDLE;
-
-  uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
 public:
   Image(
 		VkDevice device,
@@ -36,5 +28,16 @@ public:
 	Image(Image&& other) noexcept;
 	// Custom move assignment
 	Image& operator=(Image&& other) noexcept;
+
+private:
+	VkDevice device;
+	VkPhysicalDevice physicalDevice;
+  VkImage image = VK_NULL_HANDLE;
+  VkDeviceMemory memory = VK_NULL_HANDLE;
+
+  // this is duplicated in Buffers.h
+  uint32_t findMemoryType(
+    uint32_t typeFilter,
+    VkMemoryPropertyFlags properties);
 };
 

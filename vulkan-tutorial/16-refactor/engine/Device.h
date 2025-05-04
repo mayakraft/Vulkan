@@ -42,16 +42,33 @@ private:
   VkInstance instance;
   VkDebugUtilsMessengerEXT debugMessenger;
   VkSurfaceKHR surface;
+
+  // the physical hardware device (GPU) we are initializing
   VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+
+  // the logical device
+  // this will be referenced by nearly every Vulkan function call
   VkDevice device;
+
+  // device queues will be automatically cleaned up when the logical device is freed
+  // queues are used to submit commands to the GPU.
+
+  // graphics queue is used to submit rendering commands
   VkQueue graphicsQueue;
+
+  // presentation queue is used to post the renderings to the surface
   VkQueue presentQueue;
+
+  // the command pool is used to create command buffers, copying buffers,
+  // creating images, creating mipmaps, various basic memory operations
   VkCommandPool commandPool;
 
+  // these are used to create the queues,
+  // and these indices themselves are needed by the swap chain
   uint32_t graphicsQueueFamilyIndex;
 	uint32_t presentQueueFamilyIndex;
 
-  // multisampling
+  // multisample anti-aliasing
   VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
   VkSampleCountFlagBits getMaxUsableSampleCount();
 

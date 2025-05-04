@@ -129,6 +129,9 @@ void Device::pickPhysicalDevice() {
       //   break;
       // }
       physicalDevice = deviceCandidate;
+
+      // the number of multisample anti-aliasing possible
+      // on both color and depth buffers
       msaaSamples = getMaxUsableSampleCount();
       break;
     }
@@ -251,12 +254,15 @@ void Device::createCommandPool() {
   }
 }
 
+// this will return the maximum available level of multisampling possible on both
+// the color and the depth buffers according to the current physical device.
 VkSampleCountFlagBits Device::getMaxUsableSampleCount() {
   VkPhysicalDeviceProperties physicalDeviceProperties;
   vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
   VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts
     & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
   if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
   if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
   if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }

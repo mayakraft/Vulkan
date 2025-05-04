@@ -56,6 +56,10 @@ SwapChainResources::SwapChainResources(
 }
 
 SwapChainResources::~SwapChainResources() {
+  deallocAll();
+}
+
+void SwapChainResources::deallocAll() {
   for (auto framebuffer : swapChainFramebuffers) {
     if (framebuffer != VK_NULL_HANDLE) {
       vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -89,11 +93,7 @@ void SwapChainResources::createFramebuffers() {
 }
 
 void SwapChainResources::recreateSwapChain() {
-	// swapChain.recreateSwapChain(*this);
-
-	for (auto framebuffer : swapChainFramebuffers) {
-		vkDestroyFramebuffer(device, framebuffer, nullptr);
-	}
+  deallocAll();
 
   colorImage = Image(
     device,

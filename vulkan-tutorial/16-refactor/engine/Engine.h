@@ -28,7 +28,9 @@ private:
 
   bool framebufferResized = false;
 
- 	const char *appName = "Vulkan Graphics";
+ 	const char *appName = "Vulkan App";
+  const char *engineName = "Vulkan Engine";
   const uint32_t WIDTH = 512;
   const uint32_t HEIGHT = 512;
 };
+

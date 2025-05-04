@@ -1,6 +1,5 @@
 #include "Buffers.h"
 #include "Device.h"
-#include "vulkan/vulkan_core.h"
 
 void Buffers::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
   VkBufferCreateInfo bufferInfo{};

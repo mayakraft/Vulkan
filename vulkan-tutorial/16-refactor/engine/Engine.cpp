@@ -4,7 +4,7 @@
 Engine::Engine() {
   initWindow();
 
-  device = new Device(window, appName, appName);
+  device = new Device(window, appName, engineName);
   buffers = new Buffers(*device);
   swapChain = new SwapChain(*device);
   pipeline = new Pipeline(*device, *swapChain, *buffers);
@@ -36,7 +36,12 @@ void Engine::initWindow() {
     throw std::runtime_error("failed to initialize GLFW");
   }
 
+  // OpenGL is enabled by default, disable it, we are using Vulkan
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+  // swap chain rebuilding has been implemented,
+  // it's possible to resize a window now.
+  // otherwise, this is how we can force disable window-resizing.
   // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
   window = glfwCreateWindow(WIDTH, HEIGHT, appName, nullptr, nullptr);
