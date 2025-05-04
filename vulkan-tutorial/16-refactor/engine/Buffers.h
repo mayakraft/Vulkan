@@ -9,15 +9,10 @@ class Device;
 class Buffers {
 private:
 	Device& device;
-	VkCommandPool commandPool;
-
-  void createCommandPool();
 
 public:
-	Buffers(Device& device);
-  ~Buffers();
-
-  VkCommandPool getCommandPool() const { return commandPool; }
+	Buffers(Device& device): device(device) {}
+  ~Buffers() {}
 
 	void createBuffer(
 		VkDeviceSize size,

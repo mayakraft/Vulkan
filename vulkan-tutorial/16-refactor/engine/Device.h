@@ -18,20 +18,21 @@ public:
   VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; }
   VkQueue getGraphicsQueue() const { return graphicsQueue; }
   VkQueue getPresentQueue() const { return presentQueue; }
+  VkCommandPool getCommandPool() const { return commandPool; }
   VkSurfaceKHR getSurface() const { return surface; }
   VkSampleCountFlagBits getMsaaSamples() const { return msaaSamples; }
 
-  // these are used later in the SwapChain
-  uint32_t graphicsQueueFamilyIndex;
-	uint32_t presentQueueFamilyIndex;
-	// uint32_t[] getQueueFamilyIndices() const {}
+  // these are only used by the SwapChain
+  uint32_t getGraphicsQueueFamilyIndex() const { return graphicsQueueFamilyIndex; }
+  uint32_t getPresentQueueFamilyIndex() const { return presentQueueFamilyIndex; }
 
 private:
   void createInstance(const char* applicationName, const char* engineName);
-  void setupDebugMessenger();
   void createSurface();
   void pickPhysicalDevice();
   void createLogicalDevice();
+  void createCommandPool();
+
   bool checkValidationLayerSupport();
   bool checkDeviceExtensionSupport(VkPhysicalDevice device);
   void printAvailableDeviceExtensions(VkPhysicalDevice device);
@@ -45,6 +46,10 @@ private:
   VkDevice device;
   VkQueue graphicsQueue;
   VkQueue presentQueue;
+  VkCommandPool commandPool;
+
+  uint32_t graphicsQueueFamilyIndex;
+	uint32_t presentQueueFamilyIndex;
 
   // multisampling
   VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;

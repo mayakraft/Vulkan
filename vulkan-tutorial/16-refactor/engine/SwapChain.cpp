@@ -77,8 +77,8 @@ void SwapChain::createSwapChain() {
 	}
 
 	uint32_t queueFamilyIndices[] = {
-		device.graphicsQueueFamilyIndex,
-		device.presentQueueFamilyIndex
+		device.getGraphicsQueueFamilyIndex(),
+		device.getPresentQueueFamilyIndex()
 	};
 	VkSwapchainCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

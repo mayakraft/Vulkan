@@ -5,8 +5,8 @@ Engine::Engine() {
   initWindow();
 
   device = new Device(window, appName, appName);
-  swapChain = new SwapChain(*device);
   buffers = new Buffers(*device);
+  swapChain = new SwapChain(*device);
   pipeline = new Pipeline(*device, *swapChain, *buffers);
   renderer = new Renderer(*device, *swapChain, *buffers, *pipeline);
 }
@@ -14,8 +14,8 @@ Engine::Engine() {
 Engine::~Engine() {
   delete renderer;
   delete pipeline;
-  delete buffers;
   delete swapChain;
+  delete buffers;
   delete device;
 
   glfwDestroyWindow(window);

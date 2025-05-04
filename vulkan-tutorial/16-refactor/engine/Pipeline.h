@@ -33,7 +33,10 @@ private:
   Buffers& buffers;
 
   VkRenderPass renderPass;
-  VkDescriptorSetLayout descriptorSetLayout;
   VkPipelineLayout pipelineLayout;
   VkPipeline graphicsPipeline;
+
+  // descriptor sets are used for shader uniforms
+  // this is used to create pipelineLayout, which in turn is used to create graphicsPipeline
+  VkDescriptorSetLayout descriptorSetLayout;
 };

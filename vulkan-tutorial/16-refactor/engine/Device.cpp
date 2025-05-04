@@ -2,18 +2,20 @@
 #include <stdexcept>
 #include <iostream>
 
-// The physical device refers to the IRL physical hardware.
-// There may be multiple physical devices, in which case, we will want to
-// query the capabilities of each device.
-Device::Device(GLFWwindow* window, const char* applicationName, const char* engineName) : window(window) {
+Device::Device(
+  GLFWwindow* window,
+  const char* applicationName,
+  const char* engineName)
+  : window(window) {
   createInstance(applicationName, engineName);
-  setupDebugMessenger();
   createSurface();
   pickPhysicalDevice();
   createLogicalDevice();
+  createCommandPool();
 }
 
 Device::~Device() {
+	vkDestroyCommandPool(device, commandPool, nullptr);
   vkDestroyDevice(device, nullptr);
   vkDestroySurfaceKHR(instance, surface, nullptr);
   vkDestroyInstance(instance, nullptr);
@@ -71,10 +73,6 @@ void Device::createInstance(const char* applicationName, const char* engineName)
   }
 }
 
-void Device::setupDebugMessenger() {
-  // no debug messenger for now
-}
-
 void Device::createSurface() {
 	// To maintain platform agnosticism, Vulkan cannot interface with a window
 	// system on its own. Ask GLFW to create this, specific to our platform.
@@ -83,11 +81,9 @@ void Device::createSurface() {
   }
 }
 
-/**
- * Of the (potentially) many Vulkan-ready devices, we need to choose
- * the best fit device for our purposes, so, this is a heuristic
- * method, in which the needs may change from app to app.
- */
+// Of the (potentially) many Vulkan-ready devices, we need to choose
+// the best fit device for our purposes, so, this is a heuristic
+// method, in which the needs may change from app to app.
 // The physical device refers to the IRL physical hardware.
 // There may be multiple physical devices, in which case, we will want to
 // query the capabilities of each device.
@@ -235,6 +231,26 @@ void Device::createLogicalDevice() {
   vkGetDeviceQueue(device, presentFamily, 0, &presentQueue);
 }
 
+// the command pool manages memory. when we need to allocate a buffer,
+// we will be referencing this command pool.
+void Device::createCommandPool() {
+  VkCommandPoolCreateInfo poolInfo{};
+  poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  // there are only two possible flags:
+  // - VK_COMMAND_POOL_CREATE_TRANSIENT_BIT
+  // - VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  // we want to be able to record a command buffer every frame, reset, and record over it.
+  // in this case we need the reset command buffer flag
+  poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  // command buffers are executed on one of these device queues (graphics queue, presentation queue),
+  // in this case we are using the graphics queue.
+  poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+
+  if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create command pool");
+  }
+}
+
 VkSampleCountFlagBits Device::getMaxUsableSampleCount() {
   VkPhysicalDeviceProperties physicalDeviceProperties;
   vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
@@ -319,3 +335,4 @@ void Device::printAvailableDeviceExtensions(VkPhysicalDevice device) {
 //   in the VkInstanceCreateInfo flags and enable the
 //   VK_KHR_portability_enumeration instance extension."
 //   see https://stackoverflow.com/questions/72374316/validation-error-on-device-extension-on-m1-mac
+

@@ -2,25 +2,6 @@
 #include "Device.h"
 #include "vulkan/vulkan_core.h"
 
-Buffers::Buffers(Device& device) : device(device) {
-	createCommandPool();
-}
-
-Buffers::~Buffers() {
-	vkDestroyCommandPool(device.getDevice(), commandPool, nullptr);
-}
-
-void Buffers::createCommandPool() {
-  VkCommandPoolCreateInfo poolInfo{};
-  poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  poolInfo.queueFamilyIndex = device.graphicsQueueFamilyIndex;
-
-  if (vkCreateCommandPool(device.getDevice(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create command pool");
-  }
-}
-
 void Buffers::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
   VkBufferCreateInfo bufferInfo{};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -361,7 +342,7 @@ VkCommandBuffer Buffers::beginSingleTimeCommands() {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandPool = commandPool;
+  allocInfo.commandPool = device.getCommandPool();
   allocInfo.commandBufferCount = 1;
 
   VkCommandBuffer commandBuffer;
@@ -388,5 +369,5 @@ void Buffers::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
   vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
   vkQueueWaitIdle(device.getGraphicsQueue());
 
-  vkFreeCommandBuffers(device.getDevice(), commandPool, 1, &commandBuffer);
+  vkFreeCommandBuffers(device.getDevice(), device.getCommandPool(), 1, &commandBuffer);
 }

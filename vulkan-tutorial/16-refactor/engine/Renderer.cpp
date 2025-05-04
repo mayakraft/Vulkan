@@ -261,6 +261,9 @@ void Renderer::createUniformBuffers() {
   }
 }
 
+// descriptor sets cannot be allocated directly they must be allocated from a pool,
+// just like how command buffers are allocated.
+// this is called in preparation to calling the create descriptor sets function.
 void Renderer::createDescriptorPool() {
   std::array<VkDescriptorPoolSize, 2> poolSizes{};
   poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -334,7 +337,12 @@ void Renderer::createCommandBuffers() {
 
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = buffers.getCommandPool();
+  allocInfo.commandPool = device.getCommandPool();
+  // there are two possible levels:
+  // - VK_COMMAND_BUFFER_LEVEL_PRIMARY
+  // - VK_COMMAND_BUFFER_LEVEL_SECONDARY
+  // the secondary ones cannot be submitted directly but are instead
+  // called from primary command buffers
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
 
@@ -447,6 +455,9 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
   clearValues[1].depthStencil = {1.0f, 0};
 
+  // drawing starts by configuring the render pass.
+  // attach the frame buffer for the correct swap chain image,
+  // and some values which define the size of the render area / clear color values.
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   renderPassInfo.renderPass = pipeline.getRenderPass();
@@ -456,8 +467,13 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
   renderPassInfo.pClearValues = clearValues.data();
 
+  // we could be executing this beginning to the render pass with one of two flags:
+  // - VK_SUBPASS_CONTENTS_INLINE
+  // - VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
   vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+  // bind the graphics pipeline
+  // the second parameter specifies if the pipeline is graphics or compute
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
 
   VkViewport viewport{};

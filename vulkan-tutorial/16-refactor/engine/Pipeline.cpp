@@ -91,6 +91,8 @@ void Pipeline::createRenderPass() {
   }
 }
 
+// for uniforms
+// the rest of the uniform related code is in the Renderer class.
 void Pipeline::createDescriptorSetLayout() {
   VkDescriptorSetLayoutBinding uboLayoutBinding{};
   uboLayoutBinding.binding = 0;

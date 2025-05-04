@@ -52,8 +52,10 @@ private:
   Pipeline& pipeline;
   SwapChainResources swapChainResources;
 
+  // command buffers are automatically freed when their command pool is destroyed
   std::vector<VkCommandBuffer> commandBuffers;
 
+  // the mesh geometry to be rendered
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 
@@ -73,7 +75,10 @@ private:
   VkImageView textureImageView;
   VkSampler textureSampler;
 
+  // Uniforms
+  // descriptor pool is used to allocate descriptor sets
   VkDescriptorPool descriptorPool;
+  // descriptor sets are automatically freed when the descriptor pool is destroyed
   std::vector<VkDescriptorSet> descriptorSets;
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
