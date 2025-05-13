@@ -1,15 +1,17 @@
-// #pragma once
+#pragma once
 
-// #include <vulkan/vulkan.h>
-// #include <string>
+#include <vulkan/vulkan.h>
+#include <string>
+#include <cstdint>
 
-// struct PipelineConfig {
-//   VkRenderPass renderPass;
-//   VkExtent2D extent;
-//   VkDescriptorSetLayout descriptorSetLayout;
-//   VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-//   VkFormat colorFormat;
-//   VkFormat depthFormat;
-//   std::string vertShaderPath = "./shaders/simple.vert.spv";
-//   std::string fragShaderPath = "./shaders/simple.frag.spv";
-// };
+typedef struct {
+  VkPipelineViewportStateCreateInfo viewportInfo;
+  VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
+  VkPipelineRasterizationStateCreateInfo rasterizationInfo;
+  VkPipelineMultisampleStateCreateInfo multisampleInfo;
+  VkPipelineColorBlendAttachmentState colorBlendAttachment;
+  VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+  VkRenderPass renderPass = VK_NULL_HANDLE;
+  uint32_t subpass = 0;
+} PipelineConfigInfo;
+

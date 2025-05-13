@@ -8,8 +8,8 @@
 #include "Image.h"
 #include "ImageView.h"
 #include "Pipeline.h"
-#include "Vertex.h"
 #include "SwapChainResources.h"
+#include "RenderObject.h"
 
 class Renderer {
 public:
@@ -24,10 +24,6 @@ private:
 	const int MAX_FRAMES_IN_FLIGHT = 2;
 	size_t currentFrame = 0;
 
-  const std::string MODEL_PATH = "./assets/viking_room.obj";
-  const std::string TEXTURE_PATH = "./assets/viking_room.png";
-
-  void loadModel();
   void createFramebuffers();
   void createCommandBuffers();
   void createSyncObjects();
@@ -36,8 +32,6 @@ private:
   void createTextureImage();
   void createTextureImageView();
   void createTextureSampler();
-  void createVertexBuffer();
-  void createIndexBuffer();
   void createUniformBuffers();
   void createDescriptorPool();
   void createDescriptorSets();
@@ -52,28 +46,14 @@ private:
   Pipeline& pipeline;
   SwapChainResources swapChainResources;
 
+  std::vector<RenderObject> renderObjects;
+
   // command buffers are automatically freed when their command pool is destroyed
   std::vector<VkCommandBuffer> commandBuffers;
-
-  // the mesh geometry to be rendered
-  std::vector<Vertex> vertices;
-  std::vector<uint32_t> indices;
-
-  VkBuffer vertexBuffer;
-  VkDeviceMemory vertexBufferMemory;
-  VkBuffer indexBuffer;
-  VkDeviceMemory indexBufferMemory;
 
   std::vector<VkBuffer> uniformBuffers;
   std::vector<VkDeviceMemory> uniformBuffersMemory;
   std::vector<void*> uniformBuffersMapped;
-
-  // texture
-  uint32_t mipLevels;
-  VkImage textureImage;
-  VkDeviceMemory textureImageMemory;
-  VkImageView textureImageView;
-  VkSampler textureSampler;
 
   // Uniforms
   // descriptor pool is used to allocate descriptor sets
@@ -83,5 +63,8 @@ private:
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
+
+  // coordinate timing between the CPU and GPU
+  // notably used here to reduce input latency
   std::vector<VkFence> inFlightFences;
 };

@@ -13,6 +13,8 @@ SwapChain::~SwapChain() {
   deallocAll();
 }
 
+// make sure not to call this until we know these resources
+// are no longer in use (after vkDeviceWaitIdle)
 void SwapChain::deallocAll() {
   for (auto imageView : swapChainImageViews) {
     vkDestroyImageView(device.getDevice(), imageView, nullptr);
@@ -20,6 +22,8 @@ void SwapChain::deallocAll() {
   vkDestroySwapchainKHR(device.getDevice(), swapChain, nullptr);
 }
 
+// this is one half of the code necessary to recreate a swap chain
+// the other half lives on the Renderer class.
 void SwapChain::recreateSwapChain() {
   DEBUG_LOG("recreate swap chain");
 	int width = 0;
@@ -30,6 +34,8 @@ void SwapChain::recreateSwapChain() {
 		glfwWaitEvents();
 	}
 
+  // we are about to free a bunch of resources, but if they are
+  // still in use the program will crash. wait until the device is idle
 	vkDeviceWaitIdle(device.getDevice());
 
   deallocAll();
@@ -111,6 +117,12 @@ void SwapChain::createSwapChain() {
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
+  // tell the swap chain that these images will be rendered directly
+  // into a graphics pipeline.
+  // Alternatively, it could be
+  // - TRANSFER_DESTINATION: images are pre-written elsewhere and
+  //   then copied/blipped into this swap chain's set of images
+  // - STORAGE: the image is written by a compute shader
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
   // on integrated GPUs (MacOS M-series for example), these two
@@ -135,6 +147,9 @@ void SwapChain::createSwapChain() {
     throw std::runtime_error("failed to create swap chain");
   }
 
+  // we only specified a minimum number of swap chain images,
+  // not the absolute amount, it's possible it makes more.
+  // we need to query how many images were created and resize the container.
   vkGetSwapchainImagesKHR(device.getDevice(), swapChain, &imageCount, nullptr);
   swapChainImages.resize(imageCount);
   vkGetSwapchainImagesKHR(device.getDevice(), swapChain, &imageCount, swapChainImages.data());

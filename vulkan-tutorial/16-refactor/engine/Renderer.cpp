@@ -9,10 +9,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 #include <array>
-#define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb_image.h"
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "../lib/tiny_obj_loader.h"
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 	auto renderer = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
@@ -38,12 +34,16 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
       swapChain.getSwapChainImageViews(),
       pipeline.getRenderPass()) {
 
-  createTextureImage();
-  createTextureImageView();
-  createTextureSampler();
-  loadModel();
-  createVertexBuffer();
-  createIndexBuffer();
+  // create the viking room example
+  renderObjects.emplace_back(device, buffers);
+
+  for (auto& object : renderObjects) object.createTextureImage();
+  for (auto& object : renderObjects) object.createTextureImageView();
+  for (auto& object : renderObjects) object.createTextureSampler();
+  for (auto& object : renderObjects) object.loadModel();
+  for (auto& object : renderObjects) object.createVertexBuffer();
+  for (auto& object : renderObjects) object.createIndexBuffer();
+
   createUniformBuffers();
   createDescriptorPool();
   createDescriptorSets();
@@ -55,18 +55,6 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
 }
 
 Renderer::~Renderer() {
-  // textures
-  vkDestroySampler(device.getDevice(), textureSampler, nullptr);
-  vkDestroyImageView(device.getDevice(), textureImageView, nullptr);
-  vkDestroyImage(device.getDevice(), textureImage, nullptr);
-  vkFreeMemory(device.getDevice(), textureImageMemory, nullptr);
-
-  // geometry
-  vkDestroyBuffer(device.getDevice(), indexBuffer, nullptr);
-  vkFreeMemory(device.getDevice(), indexBufferMemory, nullptr);
-  vkDestroyBuffer(device.getDevice(), vertexBuffer, nullptr);
-  vkFreeMemory(device.getDevice(), vertexBufferMemory, nullptr);
-
   // uniforms
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     vkDestroyBuffer(device.getDevice(), uniformBuffers[i], nullptr);
@@ -83,6 +71,10 @@ Renderer::~Renderer() {
 
 void Renderer::recreateSwapChain() {
 	swapChain.recreateSwapChain();
+  // note: we are not recreating the render pass.
+  // if the app was moved between two monitors with different
+  // dynamic ranges, it would be better to recreate the render pass.
+  // the render pass is owned by Pipeline()
   swapChainResources = SwapChainResources(
     device.getDevice(),
     device.getPhysicalDevice(),
@@ -92,160 +84,6 @@ void Renderer::recreateSwapChain() {
     buffers.findDepthFormat(),
     swapChain.getSwapChainImageViews(),
     pipeline.getRenderPass());
-}
-
-void Renderer::loadModel() {
-  tinyobj::attrib_t attrib;
-  std::vector<tinyobj::shape_t> shapes;
-  std::vector<tinyobj::material_t> materials;
-  std::string err;
-
-  if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, MODEL_PATH.c_str())) {
-    throw std::runtime_error(err);
-  }
-
-  std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-  for (const auto& shape : shapes) {
-    for (const auto& index : shape.mesh.indices) {
-      Vertex vertex{};
-
-      vertex.position = {
-        attrib.vertices[3 * index.vertex_index + 0],
-        attrib.vertices[3 * index.vertex_index + 1],
-        attrib.vertices[3 * index.vertex_index + 2],
-      };
-
-      vertex.texCoord = {
-        attrib.texcoords[2 * index.texcoord_index + 0],
-        1.0 - attrib.texcoords[2 * index.texcoord_index + 1],
-      };
-
-      vertex.color = {1.0f, 1.0f, 1.0f};
-
-      if (uniqueVertices.count(vertex) == 0) {
-        uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-        vertices.push_back(vertex);
-      }
-
-      indices.push_back(uniqueVertices[vertex]);
-    }
-  }
-}
-
-void Renderer::createTextureImage() {
-  int texWidth, texHeight, texChannels;
-  stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-  VkDeviceSize imageSize = texWidth * texHeight * 4;
-  if (!pixels) {
-    throw std::runtime_error("failed to load texture image");
-  }
-  mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-  buffers.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-  void* data;
-  vkMapMemory(device.getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-  memcpy(data, pixels, static_cast<size_t>(imageSize));
-  vkUnmapMemory(device.getDevice(), stagingBufferMemory);
-
-  stbi_image_free(pixels);
-
-  buffers.createImage(
-    static_cast<uint32_t>(texWidth),
-    static_cast<uint32_t>(texHeight),
-    mipLevels,
-    VK_SAMPLE_COUNT_1_BIT,
-    VK_FORMAT_R8G8B8A8_SRGB,
-    VK_IMAGE_TILING_OPTIMAL,
-    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    textureImage,
-    textureImageMemory
-  );
-
-  buffers.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-  buffers.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-  // present from before we added mipmaps
-  // transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
-
-  buffers.generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
-
-  vkDestroyBuffer(device.getDevice(), stagingBuffer, nullptr);
-  vkFreeMemory(device.getDevice(), stagingBufferMemory, nullptr);
-}
-
-void Renderer::createTextureImageView() {
-  textureImageView = buffers.createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
-}
-
-void Renderer::createTextureSampler() {
-  VkPhysicalDeviceProperties deviceProperties{};
-  vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), &deviceProperties);
-
-  VkSamplerCreateInfo samplerInfo{};
-  samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  samplerInfo.magFilter = VK_FILTER_LINEAR;
-  samplerInfo.minFilter = VK_FILTER_LINEAR;
-  samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  samplerInfo.anisotropyEnable = VK_TRUE;
-  samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy;
-  samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-  samplerInfo.unnormalizedCoordinates = VK_FALSE;
-  samplerInfo.compareEnable = VK_FALSE;
-  samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-  samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-  samplerInfo.maxLod = static_cast<float>(mipLevels);
-  // samplerInfo.minLod = static_cast<float>(mipLevels / 2);
-  samplerInfo.minLod = 0.0f; // Optional
-  samplerInfo.mipLodBias = 0.0f; // Optional
-
-  if (vkCreateSampler(device.getDevice(), &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create texture sampler");
-  }
-}
-
-void Renderer::createVertexBuffer() {
-  VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-  VkBuffer stagingBuffer;
-  VkDeviceMemory stagingBufferMemory;
-  buffers.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-  void* data;
-  vkMapMemory(device.getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-  memcpy(data, vertices.data(), (size_t)bufferSize);
-  vkUnmapMemory(device.getDevice(), stagingBufferMemory);
-
-  buffers.createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-  buffers.copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-  vkDestroyBuffer(device.getDevice(), stagingBuffer, nullptr);
-  vkFreeMemory(device.getDevice(), stagingBufferMemory, nullptr);
-}
-
-void Renderer::createIndexBuffer() {
-  VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
-
-  VkBuffer indexStagingBuffer;
-  VkDeviceMemory indexStagingBufferMemory;
-  buffers.createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, indexStagingBuffer, indexStagingBufferMemory);
-
-  void* indexData;
-  vkMapMemory(device.getDevice(), indexStagingBufferMemory, 0, indexBufferSize, 0, &indexData);
-  memcpy(indexData, indices.data(), (size_t)indexBufferSize);
-  vkUnmapMemory(device.getDevice(), indexStagingBufferMemory);
-
-  buffers.createBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-  buffers.copyBuffer(indexStagingBuffer, indexBuffer, indexBufferSize);
-
-  vkDestroyBuffer(device.getDevice(), indexStagingBuffer, nullptr);
-  vkFreeMemory(device.getDevice(), indexStagingBufferMemory, nullptr);
 }
 
 void Renderer::createUniformBuffers() {
@@ -303,8 +141,11 @@ void Renderer::createDescriptorSets() {
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = textureImageView;
-    imageInfo.sampler = textureSampler;
+    // todo: refactoring. hard code this for now
+    // imageInfo.imageView = textureImageView;
+    // imageInfo.sampler = textureSampler;
+    imageInfo.imageView = renderObjects[0].textureImageView;
+    imageInfo.sampler = renderObjects[0].textureSampler;
 
     std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -373,10 +214,23 @@ void Renderer::createSyncObjects() {
 }
 
 void Renderer::drawFrame() {
+  // using a fence to reduce the latency between the CPU and GPU,
+  // for example, user input via keyboard or mouse comes in as frames
+  // are being rendered in the background before being presented to the screen,
+  // therefore the user input and screen become out of sync.
+  // this fence tells the GPU to wait a bit longer if needed so as to
+  // create more of a linear sequence of drawing and presenting.
   vkWaitForFences(device.getDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
+  // ask the swap chain for the next available image that we can write into
   uint32_t imageIndex;
-  VkResult result = vkAcquireNextImageKHR(device.getDevice(), swapChain.getSwapChain(), UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+  VkResult result = vkAcquireNextImageKHR(
+    device.getDevice(),
+    swapChain.getSwapChain(),
+    UINT64_MAX, // timeout (max means potentially wait forever)
+    imageAvailableSemaphores[currentFrame],
+    VK_NULL_HANDLE,
+    &imageIndex);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
   	recreateSwapChain();
@@ -393,6 +247,7 @@ void Renderer::drawFrame() {
   vkResetCommandBuffer(commandBuffers[currentFrame], 0);
   recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
+  // to draw, the rendering workload is submitted to the queue
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -404,17 +259,24 @@ void Renderer::drawFrame() {
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
+  // this semaphor indicates that the rendering has completed
+  // and the image can now be handed off to the swap chain
   VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
+  // submit the rendering workflow to the queue
+  // the final parameter (fence) is used to sync the CPU with the GPU
   if (vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
     throw std::runtime_error("failed to submit draw command buffer");
   }
 
+  // now onto presenting the rendering to the screen
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
+  // the aformentioned semaphor, indicating that the rendering has finished
+  // and the image is ready to be handed off to the swap chain
   presentInfo.waitSemaphoreCount = 1;
   presentInfo.pWaitSemaphores = signalSemaphores;
 
@@ -424,6 +286,7 @@ void Renderer::drawFrame() {
   presentInfo.pImageIndices = &imageIndex;
   presentInfo.pResults = nullptr; // Optional
 
+  // submit the presentation instruction
   vkQueuePresentKHR(device.getPresentQueue(), &presentInfo);
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
@@ -474,7 +337,10 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
   // bind the graphics pipeline
   // the second parameter specifies if the pipeline is graphics or compute
-  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getGraphicsPipeline());
+  vkCmdBindPipeline(
+    commandBuffer,
+    VK_PIPELINE_BIND_POINT_GRAPHICS,
+    pipeline.getGraphicsPipeline());
 
   VkViewport viewport{};
 	viewport.x = 0.0f;
@@ -490,16 +356,21 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	scissor.extent = swapChainExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	VkBuffer vertexBuffers[] = {vertexBuffer};
-	VkDeviceSize offsets[] = {0};
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+  // this used to be after vertex/index binding but before the draw call,
+  // but now that we abstracted drawing into each object,
+  // this has now been moved to be before vertex/index binding.
+  vkCmdBindDescriptorSets(
+    commandBuffer,
+    VK_PIPELINE_BIND_POINT_GRAPHICS,
+    pipeline.getPipelineLayout(),
+    0,
+    1,
+    &descriptorSets[currentFrame],
+    0,
+    nullptr);
 
-  vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getPipelineLayout(), 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-	// used previously before adding index buffers
-	// vkCmdDraw(commandBuffer, static_cast<uint32_t>(vertices.size()), 1, 0, 0);
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+  // per-object draw call moved in here
+  for (auto& object : renderObjects) object.recordCommandBuffer(commandBuffer);
 
 	vkCmdEndRenderPass(commandBuffer);
 

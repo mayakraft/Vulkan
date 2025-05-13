@@ -2,19 +2,19 @@
 
 I'm learning Vulkan. Here are some resources that I'm using:
 
-- 📖 [Vulkan Cookbook by Pawel Lapinski](https://www.packtpub.com/product/vulkan-cookbook/9781786468154)
 - 💻 [Vulkan Tutorial](https://vulkan-tutorial.com/)
-- 📺 [Vulkan game engine tutorial by Brendan Galea](https://www.youtube.com/watch?v=Y9U9IE0gVHA&list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR&index=1&pp=iAQB)
-- 💻 [Vulkan in 30 minutes](https://renderdoc.org/vulkan-in-30-minutes.html)
-- 💻 [API without secrets](https://www.intel.com/content/www/us/en/developer/articles/training/api-without-secrets-introduction-to-vulkan-preface.html)
-- 💻 [Yet another blog explaining Vulkan synchronization](https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/)
+- 🎥 [Vulkan Lecture Series, Johannes Unterguggenberger, TU Wien](https://www.youtube.com/playlist?list=PLmIqTlJ6KsE1Jx5HV4sd2jOe3V1KMHHgn)
 - 💻 [Vulkan Guide](https://vkguide.dev/)
+- 📚 [Vulkan Cookbook by Pawel Lapinski](https://www.packtpub.com/product/vulkan-cookbook/9781786468154)
+- 🎥 [Vulkan game engine tutorial by Brendan Galea](https://www.youtube.com/watch?v=Y9U9IE0gVHA&list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR&index=1&pp=iAQB)
+- 💻 [Yet another blog explaining Vulkan synchronization](https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/)
+- 💻 [Vulkan in 30 minutes](https://renderdoc.org/vulkan-in-30-minutes.html)
 
 ## Usage
 
-All numbered folders are self-contained projects. Navigate into any folder and type `make` and then run the program (usually `./a.out`).
+All numbered folders are self-contained projects. Navigate into any folder and type `make` and then run the program (`make run`, or execute directly `./a.out` or `./bin/app`).
 
-But, it probably will not work if you don't follow this setup.
+If you are new to Vulkan, you will need to follow some kind of setup:
 
 ## MacOS setup
 
