@@ -35,18 +35,31 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
       pipeline.getRenderPass()) {
 
   // create the viking room example
-  renderObjects.emplace_back(device, buffers);
+  materials.emplace_back(device, buffers, swapChain);
+  renderObjects.emplace_back(device, buffers, materials[0]);
 
-  for (auto& object : renderObjects) object.createTextureImage();
-  for (auto& object : renderObjects) object.createTextureImageView();
-  for (auto& object : renderObjects) object.createTextureSampler();
+  /*for (auto& object : renderObjects) object.createTextureImage();*/
+  /*for (auto& object : renderObjects) object.createTextureImageView();*/
+  /*for (auto& object : renderObjects) object.createTextureSampler();*/
   for (auto& object : renderObjects) object.loadModel();
   for (auto& object : renderObjects) object.createVertexBuffer();
   for (auto& object : renderObjects) object.createIndexBuffer();
 
-  createUniformBuffers();
+  /*for (auto& material : materials) material.createUniformBuffers();*/
+
+  // createUniformBuffers();
   createDescriptorPool();
-  createDescriptorSets();
+  // createDescriptorSets();
+  // this got moved out of the createDescriptorSets
+  std::vector<VkDescriptorSetLayout> layouts(
+    MAX_FRAMES_IN_FLIGHT,
+    pipeline.getDescriptorSetLayout());
+  for (auto& material : materials) {
+    material.createDescriptorSets(descriptorPool, layouts);
+  }
+  /*for (auto& object : renderObjects) {*/
+  /*  object->material.createDescriptorSets(descriptorPool, layouts);*/
+  /*}*/
   createCommandBuffers();
   createSyncObjects();
 
@@ -56,10 +69,10 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
 
 Renderer::~Renderer() {
   // uniforms
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    vkDestroyBuffer(device.getDevice(), uniformBuffers[i], nullptr);
-    vkFreeMemory(device.getDevice(), uniformBuffersMemory[i], nullptr);
-  }
+  /*for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {*/
+  /*  vkDestroyBuffer(device.getDevice(), uniformBuffers[i], nullptr);*/
+  /*  vkFreeMemory(device.getDevice(), uniformBuffersMemory[i], nullptr);*/
+  /*}*/
   vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -86,6 +99,7 @@ void Renderer::recreateSwapChain() {
     pipeline.getRenderPass());
 }
 
+/*
 void Renderer::createUniformBuffers() {
   VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -98,6 +112,7 @@ void Renderer::createUniformBuffers() {
     vkMapMemory(device.getDevice(), uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
   }
 }
+*/
 
 // descriptor sets cannot be allocated directly they must be allocated from a pool,
 // just like how command buffers are allocated.
@@ -120,6 +135,7 @@ void Renderer::createDescriptorPool() {
   }
 }
 
+/*
 void Renderer::createDescriptorSets() {
   std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, pipeline.getDescriptorSetLayout());
   VkDescriptorSetAllocateInfo allocInfo{};
@@ -171,6 +187,7 @@ void Renderer::createDescriptorSets() {
     vkUpdateDescriptorSets(device.getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
   }
 }
+*/
 
 void Renderer::createCommandBuffers() {
   // commandBuffers.resize(swapChainFramebuffers.size());
@@ -242,7 +259,8 @@ void Renderer::drawFrame() {
   // only reset the fence if we are submitting work
   vkResetFences(device.getDevice(), 1, &inFlightFences[currentFrame]);
 
-  updateUniformBuffer(currentFrame);
+  // updateUniformBuffer(currentFrame);
+  for (auto& material : materials) material.updateUniformBuffer(currentFrame);
 
   vkResetCommandBuffer(commandBuffers[currentFrame], 0);
   recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -356,6 +374,8 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	scissor.extent = swapChainExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+  // now moved into the render objects due to new Material
+  /*
   // this used to be after vertex/index binding but before the draw call,
   // but now that we abstracted drawing into each object,
   // this has now been moved to be before vertex/index binding.
@@ -368,9 +388,16 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     &descriptorSets[currentFrame],
     0,
     nullptr);
+  */
 
   // per-object draw call moved in here
-  for (auto& object : renderObjects) object.recordCommandBuffer(commandBuffer);
+  for (auto& object : renderObjects) {
+    object.recordCommandBuffer(
+      commandBuffer,
+      pipeline.getPipelineLayout(),
+      currentFrame
+    );
+  }
 
 	vkCmdEndRenderPass(commandBuffer);
 
@@ -379,6 +406,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   }
 }
 
+/*
 void Renderer::updateUniformBuffer(uint32_t currentImage) {
   static auto startTime = std::chrono::high_resolution_clock::now();
   auto currentTime = std::chrono::high_resolution_clock::now();
@@ -392,4 +420,5 @@ void Renderer::updateUniformBuffer(uint32_t currentImage) {
 
   memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
+*/
 

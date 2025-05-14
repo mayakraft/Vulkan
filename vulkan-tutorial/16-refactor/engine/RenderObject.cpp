@@ -1,21 +1,22 @@
 #include "RenderObject.h"
 #include <stdio.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb_image.h"
+/*#define STB_IMAGE_IMPLEMENTATION*/
+/*#include "../lib/stb_image.h"*/
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../lib/tiny_obj_loader.h"
 
-RenderObject::RenderObject(Device& device, Buffers& buffers):
+RenderObject::RenderObject(Device& device, Buffers& buffers, Material& material):
   device(device),
-  buffers(buffers) {
+  buffers(buffers),
+  material(material) {
 }
 
 RenderObject::~RenderObject() {
   // textures
-  vkDestroySampler(device.getDevice(), textureSampler, nullptr);
-  vkDestroyImageView(device.getDevice(), textureImageView, nullptr);
-  vkDestroyImage(device.getDevice(), textureImage, nullptr);
-  vkFreeMemory(device.getDevice(), textureImageMemory, nullptr);
+  /*vkDestroySampler(device.getDevice(), textureSampler, nullptr);*/
+  /*vkDestroyImageView(device.getDevice(), textureImageView, nullptr);*/
+  /*vkDestroyImage(device.getDevice(), textureImage, nullptr);*/
+  /*vkFreeMemory(device.getDevice(), textureImageMemory, nullptr);*/
 
   // model
   vkDestroyBuffer(device.getDevice(), indexBuffer, nullptr);
@@ -102,6 +103,7 @@ void RenderObject::createIndexBuffer() {
   vkFreeMemory(device.getDevice(), indexStagingBufferMemory, nullptr);
 }
 
+/*
 void RenderObject::createTextureImage() {
   int texWidth, texHeight, texChannels;
   stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -177,10 +179,31 @@ void RenderObject::createTextureSampler() {
     throw std::runtime_error("failed to create texture sampler");
   }
 }
+*/
 
-void RenderObject::recordCommandBuffer(VkCommandBuffer commandBuffer) {
+void RenderObject::recordCommandBuffer(
+  VkCommandBuffer commandBuffer,
+  VkPipelineLayout pipelineLayout,
+  uint32_t currentFrame
+  // VkDescriptorSet descriptorSet
+) {
 	VkBuffer vertexBuffers[] = {vertexBuffer};
 	VkDeviceSize offsets[] = {0};
+
+  // this used to be after vertex/index binding but before the draw call,
+  // but now that we abstracted drawing into each object,
+  // this has now been moved to be before vertex/index binding.
+  vkCmdBindDescriptorSets(
+    commandBuffer,
+    VK_PIPELINE_BIND_POINT_GRAPHICS,
+    pipelineLayout,
+    // pipeline.getPipelineLayout(),
+    0,
+    1,
+    &(material.descriptorSets[currentFrame]),
+    0,
+    nullptr);
+
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 

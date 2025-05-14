@@ -6,22 +6,27 @@
 #include "GraphicsPipeline.h"
 #include "Device.h"
 #include "Buffers.h"
+#include "Material.h"
 #include "Vertex.h"
 
 class RenderObject {
 public:
-  RenderObject(Device& device, Buffers& buffers);
+  RenderObject(Device& device, Buffers& buffers, Material& material);
   ~RenderObject();
 
   void loadModel();
   void createVertexBuffer();
   void createIndexBuffer();
 
-  void createTextureImage();
-  void createTextureImageView();
-  void createTextureSampler();
+  /*void createTextureImage();*/
+  /*void createTextureImageView();*/
+  /*void createTextureSampler();*/
 
-  void recordCommandBuffer(VkCommandBuffer commandBuffer);
+  void recordCommandBuffer(
+    VkCommandBuffer commandBuffer,
+    VkPipelineLayout pipelineLayout,
+    uint32_t currentFrame);
+    // VkDescriptorSet descriptorSet);
 
   // Disallow copying
   RenderObject(const RenderObject&) = delete;
@@ -34,9 +39,10 @@ public:
 private:
   Device& device;
   Buffers& buffers;
+  Material& material;
 
   const std::string MODEL_PATH = "./assets/viking_room.obj";
-  const std::string TEXTURE_PATH = "./assets/viking_room.png";
+  /*const std::string TEXTURE_PATH = "./assets/viking_room.png";*/
 
   // the mesh geometry to be rendered
   std::vector<Vertex> vertices;
@@ -49,11 +55,11 @@ private:
   VkDeviceMemory indexBufferMemory;
 
   // texture
-  uint32_t mipLevels;
-  VkImage textureImage;
-  VkDeviceMemory textureImageMemory;
-public:
-  VkImageView textureImageView;
-  VkSampler textureSampler;
+/*  uint32_t mipLevels;*/
+/*  VkImage textureImage;*/
+/*  VkDeviceMemory textureImageMemory;*/
+/*public:*/
+/*  VkImageView textureImageView;*/
+/*  VkSampler textureSampler;*/
 };
 

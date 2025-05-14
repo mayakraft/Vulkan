@@ -8,6 +8,7 @@
 #include "Image.h"
 #include "ImageView.h"
 #include "Pipeline.h"
+#include "Material.h"
 #include "SwapChainResources.h"
 #include "RenderObject.h"
 
@@ -55,11 +56,14 @@ private:
   std::vector<VkDeviceMemory> uniformBuffersMemory;
   std::vector<void*> uniformBuffersMapped;
 
+  // new materials
+  std::vector<Material> materials;
+
   // Uniforms
   // descriptor pool is used to allocate descriptor sets
   VkDescriptorPool descriptorPool;
   // descriptor sets are automatically freed when the descriptor pool is destroyed
-  std::vector<VkDescriptorSet> descriptorSets;
+  // std::vector<VkDescriptorSet> descriptorSets;
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
