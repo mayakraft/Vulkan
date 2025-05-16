@@ -3,7 +3,6 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <string>
-#include "GraphicsPipeline.h"
 #include "Device.h"
 #include "Buffers.h"
 #include "Material.h"
@@ -11,22 +10,17 @@
 
 class RenderObject {
 public:
-  RenderObject(Device& device, Buffers& buffers, Material& material);
+  RenderObject(
+    std::string modelPath,
+    Device& device,
+    Buffers& buffers,
+    Material& material);
   ~RenderObject();
-
-  void loadModel();
-  void createVertexBuffer();
-  void createIndexBuffer();
-
-  /*void createTextureImage();*/
-  /*void createTextureImageView();*/
-  /*void createTextureSampler();*/
 
   void recordCommandBuffer(
     VkCommandBuffer commandBuffer,
     VkPipelineLayout pipelineLayout,
     uint32_t currentFrame);
-    // VkDescriptorSet descriptorSet);
 
   // Disallow copying
   RenderObject(const RenderObject&) = delete;
@@ -41,9 +35,6 @@ private:
   Buffers& buffers;
   Material& material;
 
-  const std::string MODEL_PATH = "./assets/viking_room.obj";
-  /*const std::string TEXTURE_PATH = "./assets/viking_room.png";*/
-
   // the mesh geometry to be rendered
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
@@ -54,12 +45,8 @@ private:
   VkBuffer indexBuffer;
   VkDeviceMemory indexBufferMemory;
 
-  // texture
-/*  uint32_t mipLevels;*/
-/*  VkImage textureImage;*/
-/*  VkDeviceMemory textureImageMemory;*/
-/*public:*/
-/*  VkImageView textureImageView;*/
-/*  VkSampler textureSampler;*/
+  void loadObj(std::string modelPath);
+  void createVertexBuffer();
+  void createIndexBuffer();
 };
 

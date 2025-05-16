@@ -9,22 +9,18 @@
 
 class Material {
 public:
-  // this needs to go away
+  // this is duplicated from Renderer, this needs to go away
 	const int MAX_FRAMES_IN_FLIGHT = 2;
 
-  Material(Device& device, Buffers& buffers, SwapChain& swapChain); // , Pipeline& pipeline, VkDescriptorSetLayout layout);
+  Material(
+    std::string texturePath,
+    Device& device,
+    Buffers& buffers,
+    SwapChain& swapChain);
+
   ~Material();
 
-  /*void createTexture(const std::string& texturePath);*/
-  void createTexture();
-  void createUniformBuffers();
-
-  VkDescriptorSet getDescriptorSet();
-  VkImageView getTextureImageView();
-  VkSampler getTextureSampler();
-
-  // descriptor sets are automatically freed when the descriptor pool is destroyed
-  std::vector<VkDescriptorSet> descriptorSets;
+  std::vector<VkDescriptorSet> getDescriptorSets() const { return descriptorSets; }
 
   void createDescriptorSets(
     VkDescriptorPool descriptorPool,
@@ -37,16 +33,19 @@ private:
   Buffers& buffers;
   SwapChain& swapChain;
 
-  const std::string TEXTURE_PATH = "./assets/viking_room.png";
+  std::string texturePath;
 
   void createTextureImage();
   void createTextureImageView();
   void createTextureSampler();
-  void createUniformBuffer();
+  void createUniformBuffers();
 
   std::vector<VkBuffer> uniformBuffers;
   std::vector<VkDeviceMemory> uniformBuffersMemory;
   std::vector<void*> uniformBuffersMapped;
+
+  // descriptor sets are automatically freed when the descriptor pool is destroyed
+  std::vector<VkDescriptorSet> descriptorSets;
 
   // texture
   uint32_t mipLevels;
@@ -55,3 +54,4 @@ private:
   VkImageView textureImageView;
   VkSampler textureSampler;
 };
+

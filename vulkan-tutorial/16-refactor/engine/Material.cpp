@@ -3,14 +3,19 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
 
-Material::Material(Device& device, Buffers& buffers, SwapChain& swapChain):
-  device(device),
-  buffers(buffers),
-  swapChain(swapChain) { // VkDescriptorSetLayout layout) {
+Material::Material(
+  std::string texturePath,
+  Device& device,
+  Buffers& buffers,
+  SwapChain& swapChain)
+  : texturePath(texturePath),
+    device(device),
+    buffers(buffers),
+    swapChain(swapChain) { // VkDescriptorSetLayout layout) {
+
   createTextureImage();
   createTextureImageView();
   createTextureSampler();
-
   createUniformBuffers();
 }
 
@@ -52,11 +57,8 @@ void Material::createDescriptorSets(
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // todo: refactoring. hard code this for now
     imageInfo.imageView = textureImageView;
     imageInfo.sampler = textureSampler;
-    // imageInfo.imageView = renderObjects[0].textureImageView;
-    // imageInfo.sampler = renderObjects[0].textureSampler;
 
     std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
     descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -79,7 +81,12 @@ void Material::createDescriptorSets(
     descriptorWrites[1].pBufferInfo = nullptr; // Optional
     descriptorWrites[1].pTexelBufferView = nullptr; // Optional
 
-    vkUpdateDescriptorSets(device.getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    vkUpdateDescriptorSets(
+      device.getDevice(),
+      static_cast<uint32_t>(descriptorWrites.size()),
+      descriptorWrites.data(),
+      0,
+      nullptr);
   }
 }
 
@@ -91,8 +98,19 @@ void Material::createUniformBuffers() {
   uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    buffers.createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
-    vkMapMemory(device.getDevice(), uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+    buffers.createBuffer(
+      bufferSize,
+      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      uniformBuffers[i],
+      uniformBuffersMemory[i]);
+    vkMapMemory(
+      device.getDevice(),
+      uniformBuffersMemory[i],
+      0,
+      bufferSize,
+      0,
+      &uniformBuffersMapped[i]);
   }
 }
 
@@ -102,9 +120,19 @@ void Material::updateUniformBuffer(uint32_t currentImage) {
   float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
   UniformBufferObject ubo{};
-  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.projection = glm::perspective(glm::radians(45.0f), swapChain.getSwapChainExtent().width / (float) swapChain.getSwapChainExtent().height, 0.1f, 10.0f);
+  ubo.model = glm::rotate(
+    glm::mat4(1.0f),
+    time * glm::radians(90.0f),
+    glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.view = glm::lookAt(
+    glm::vec3(2.0f, 2.0f, 2.0f),
+    glm::vec3(0.0f, 0.0f, 0.0f),
+    glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.projection = glm::perspective(
+    glm::radians(45.0f),
+    swapChain.getSwapChainExtent().width / (float) swapChain.getSwapChainExtent().height,
+    0.1f,
+    10.0f);
   ubo.projection[1][1] *= -1;
 
   memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -112,8 +140,16 @@ void Material::updateUniformBuffer(uint32_t currentImage) {
 
 void Material::createTextureImage() {
   int texWidth, texHeight, texChannels;
-  stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+  stbi_uc* pixels = stbi_load(
+    texturePath.c_str(),
+    &texWidth,
+    &texHeight,
+    &texChannels,
+    STBI_rgb_alpha);
+
   VkDeviceSize imageSize = texWidth * texHeight * 4;
+
   if (!pixels) {
     throw std::runtime_error("failed to load texture image");
   }
@@ -121,7 +157,13 @@ void Material::createTextureImage() {
 
   VkBuffer stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
-  buffers.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+  buffers.createBuffer(
+    imageSize,
+    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    stagingBuffer,
+    stagingBufferMemory);
 
   void* data;
   vkMapMemory(device.getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
@@ -143,19 +185,39 @@ void Material::createTextureImage() {
     textureImageMemory
   );
 
-  buffers.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-  buffers.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+  buffers.transitionImageLayout(
+    textureImage,
+    VK_FORMAT_R8G8B8A8_SRGB,
+    VK_IMAGE_LAYOUT_UNDEFINED,
+    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    mipLevels);
+
+  buffers.copyBufferToImage(
+    stagingBuffer,
+    textureImage,
+    static_cast<uint32_t>(texWidth),
+    static_cast<uint32_t>(texHeight));
+
   // present from before we added mipmaps
   // transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
 
-  buffers.generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
+  buffers.generateMipmaps(
+    textureImage,
+    VK_FORMAT_R8G8B8A8_SRGB,
+    texWidth,
+    texHeight,
+    mipLevels);
 
   vkDestroyBuffer(device.getDevice(), stagingBuffer, nullptr);
   vkFreeMemory(device.getDevice(), stagingBufferMemory, nullptr);
 }
 
 void Material::createTextureImageView() {
-  textureImageView = buffers.createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+  textureImageView = buffers.createImageView(
+    textureImage,
+    VK_FORMAT_R8G8B8A8_SRGB,
+    VK_IMAGE_ASPECT_COLOR_BIT,
+    mipLevels);
 }
 
 void Material::createTextureSampler() {

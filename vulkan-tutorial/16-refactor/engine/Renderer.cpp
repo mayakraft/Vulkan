@@ -35,21 +35,11 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
       pipeline.getRenderPass()) {
 
   // create the viking room example
-  materials.emplace_back(device, buffers, swapChain);
-  renderObjects.emplace_back(device, buffers, materials[0]);
+  materials.emplace_back("./assets/viking_room.png", device, buffers, swapChain);
+  renderObjects.emplace_back("./assets/viking_room.obj", device, buffers, materials[0]);
 
-  /*for (auto& object : renderObjects) object.createTextureImage();*/
-  /*for (auto& object : renderObjects) object.createTextureImageView();*/
-  /*for (auto& object : renderObjects) object.createTextureSampler();*/
-  for (auto& object : renderObjects) object.loadModel();
-  for (auto& object : renderObjects) object.createVertexBuffer();
-  for (auto& object : renderObjects) object.createIndexBuffer();
-
-  /*for (auto& material : materials) material.createUniformBuffers();*/
-
-  // createUniformBuffers();
   createDescriptorPool();
-  // createDescriptorSets();
+
   // this got moved out of the createDescriptorSets
   std::vector<VkDescriptorSetLayout> layouts(
     MAX_FRAMES_IN_FLIGHT,
@@ -57,9 +47,6 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
   for (auto& material : materials) {
     material.createDescriptorSets(descriptorPool, layouts);
   }
-  /*for (auto& object : renderObjects) {*/
-  /*  object->material.createDescriptorSets(descriptorPool, layouts);*/
-  /*}*/
   createCommandBuffers();
   createSyncObjects();
 
@@ -68,11 +55,6 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
 }
 
 Renderer::~Renderer() {
-  // uniforms
-  /*for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {*/
-  /*  vkDestroyBuffer(device.getDevice(), uniformBuffers[i], nullptr);*/
-  /*  vkFreeMemory(device.getDevice(), uniformBuffersMemory[i], nullptr);*/
-  /*}*/
   vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -99,21 +81,6 @@ void Renderer::recreateSwapChain() {
     pipeline.getRenderPass());
 }
 
-/*
-void Renderer::createUniformBuffers() {
-  VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-  uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-  uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-  uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    buffers.createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
-    vkMapMemory(device.getDevice(), uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
-  }
-}
-*/
-
 // descriptor sets cannot be allocated directly they must be allocated from a pool,
 // just like how command buffers are allocated.
 // this is called in preparation to calling the create descriptor sets function.
@@ -134,60 +101,6 @@ void Renderer::createDescriptorPool() {
     throw std::runtime_error("failed to create descriptor pool");
   }
 }
-
-/*
-void Renderer::createDescriptorSets() {
-  std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, pipeline.getDescriptorSetLayout());
-  VkDescriptorSetAllocateInfo allocInfo{};
-  allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = descriptorPool;
-  allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-  allocInfo.pSetLayouts = layouts.data();
-
-  descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-  if (vkAllocateDescriptorSets(device.getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS) {
-    throw std::runtime_error("failed to allocate descriptor sets");
-  }
-
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = uniformBuffers[i];
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(UniformBufferObject);
-
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // todo: refactoring. hard code this for now
-    // imageInfo.imageView = textureImageView;
-    // imageInfo.sampler = textureSampler;
-    imageInfo.imageView = renderObjects[0].textureImageView;
-    imageInfo.sampler = renderObjects[0].textureSampler;
-
-    std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-    descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[0].dstSet = descriptorSets[i];
-    descriptorWrites[0].dstBinding = 0;
-    descriptorWrites[0].dstArrayElement = 0;
-    descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrites[0].descriptorCount = 1;
-    descriptorWrites[0].pBufferInfo = &bufferInfo;
-    descriptorWrites[0].pImageInfo = nullptr; // Optional
-    descriptorWrites[0].pTexelBufferView = nullptr; // Optional
-
-    descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrites[1].dstSet = descriptorSets[i];
-    descriptorWrites[1].dstBinding = 1;
-    descriptorWrites[1].dstArrayElement = 0;
-    descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrites[1].descriptorCount = 1;
-    descriptorWrites[1].pImageInfo = &imageInfo;
-    descriptorWrites[1].pBufferInfo = nullptr; // Optional
-    descriptorWrites[1].pTexelBufferView = nullptr; // Optional
-
-    vkUpdateDescriptorSets(device.getDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-  }
-}
-*/
 
 void Renderer::createCommandBuffers() {
   // commandBuffers.resize(swapChainFramebuffers.size());
@@ -259,7 +172,6 @@ void Renderer::drawFrame() {
   // only reset the fence if we are submitting work
   vkResetFences(device.getDevice(), 1, &inFlightFences[currentFrame]);
 
-  // updateUniformBuffer(currentFrame);
   for (auto& material : materials) material.updateUniformBuffer(currentFrame);
 
   vkResetCommandBuffer(commandBuffers[currentFrame], 0);
@@ -374,22 +286,6 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	scissor.extent = swapChainExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-  // now moved into the render objects due to new Material
-  /*
-  // this used to be after vertex/index binding but before the draw call,
-  // but now that we abstracted drawing into each object,
-  // this has now been moved to be before vertex/index binding.
-  vkCmdBindDescriptorSets(
-    commandBuffer,
-    VK_PIPELINE_BIND_POINT_GRAPHICS,
-    pipeline.getPipelineLayout(),
-    0,
-    1,
-    &descriptorSets[currentFrame],
-    0,
-    nullptr);
-  */
-
   // per-object draw call moved in here
   for (auto& object : renderObjects) {
     object.recordCommandBuffer(
@@ -405,20 +301,4 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     throw std::runtime_error("failed to record command buffer");
   }
 }
-
-/*
-void Renderer::updateUniformBuffer(uint32_t currentImage) {
-  static auto startTime = std::chrono::high_resolution_clock::now();
-  auto currentTime = std::chrono::high_resolution_clock::now();
-  float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-  UniformBufferObject ubo{};
-  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.projection = glm::perspective(glm::radians(45.0f), swapChain.getSwapChainExtent().width / (float) swapChain.getSwapChainExtent().height, 0.1f, 10.0f);
-  ubo.projection[1][1] *= -1;
-
-  memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
-}
-*/
 

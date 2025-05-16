@@ -30,15 +30,10 @@ private:
   void createSyncObjects();
   void createColorResources();
   void createDepthResources();
-  void createTextureImage();
-  void createTextureImageView();
-  void createTextureSampler();
-  void createUniformBuffers();
   void createDescriptorPool();
-  void createDescriptorSets();
   void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-  void updateUniformBuffer(uint32_t currentImage);
 
+  // if window attributes change this will be called
   void recreateSwapChain();
 
   Device& device;
@@ -47,8 +42,6 @@ private:
   Pipeline& pipeline;
   SwapChainResources swapChainResources;
 
-  std::vector<RenderObject> renderObjects;
-
   // command buffers are automatically freed when their command pool is destroyed
   std::vector<VkCommandBuffer> commandBuffers;
 
@@ -56,14 +49,16 @@ private:
   std::vector<VkDeviceMemory> uniformBuffersMemory;
   std::vector<void*> uniformBuffersMapped;
 
+  // mesh objects
+  std::vector<RenderObject> renderObjects;
+
   // new materials
   std::vector<Material> materials;
 
   // Uniforms
   // descriptor pool is used to allocate descriptor sets
+  // descriptor sets are currently owned by each Material
   VkDescriptorPool descriptorPool;
-  // descriptor sets are automatically freed when the descriptor pool is destroyed
-  // std::vector<VkDescriptorSet> descriptorSets;
 
   std::vector<VkSemaphore> imageAvailableSemaphores;
   std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -72,3 +67,4 @@ private:
   // notably used here to reduce input latency
   std::vector<VkFence> inFlightFences;
 };
+
