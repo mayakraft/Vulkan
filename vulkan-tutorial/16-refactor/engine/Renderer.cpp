@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include "Buffers.h"
+#include "memory/Buffers.h"
 #include <stdexcept>
 #include "Uniforms.h"
 #define GLM_FORCE_RADIANS
@@ -19,34 +19,40 @@ bool hasStencilComponent(VkFormat format) {
   return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipeline& pipeline)
+Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers)
   : device(device),
     swapChain(swapChain),
-    buffers(buffers),
-    pipeline(pipeline),
-    swapChainResources(
-      device.getDevice(),
-      device.getPhysicalDevice(),
-      swapChain.getSwapChainExtent(),
-      device.getMsaaSamples(),
-      swapChain.getSwapChainImageFormat(),
-      buffers.findDepthFormat(),
-      swapChain.getSwapChainImageViews(),
-      pipeline.getRenderPass()) {
+    buffers(buffers) {
 
-  // create the viking room example
-  materials.emplace_back("./assets/viking_room.png", device, buffers, swapChain);
-  renderObjects.emplace_back("./assets/viking_room.obj", device, buffers, materials[0]);
-
+  // this is needed for a few other things in this constructor
+  createRenderPass();
   createDescriptorPool();
 
-  // this got moved out of the createDescriptorSets
-  std::vector<VkDescriptorSetLayout> layouts(
-    MAX_FRAMES_IN_FLIGHT,
-    pipeline.getDescriptorSetLayout());
-  for (auto& material : materials) {
-    material.createDescriptorSets(descriptorPool, layouts);
-  }
+  /*swapChainResources = SwapChainResources(*/
+  /*  device.getDevice(),*/
+  /*  device.getPhysicalDevice(),*/
+  /*  swapChain.getSwapChainExtent(),*/
+  /*  device.getMsaaSamples(),*/
+  /*  swapChain.getSwapChainImageFormat(),*/
+  /*  buffers.findDepthFormat(),*/
+  /*  swapChain.getSwapChainImageViews(),*/
+  /*  renderPass);*/
+
+  swapChainResources = std::make_unique<SwapChainResources>(
+    device.getDevice(),
+    device.getPhysicalDevice(),
+    swapChain.getSwapChainExtent(),
+    device.getMsaaSamples(),
+    swapChain.getSwapChainImageFormat(),
+    buffers.findDepthFormat(),
+    swapChain.getSwapChainImageViews(),
+    renderPass);
+
+  materials.emplace_back(device, buffers, swapChain, *this, "./assets/viking_room.png");
+  renderObjects.emplace_back(device, buffers, materials[0], "./assets/viking_room.obj");
+
+  // for (auto& material : materials) material.createDescriptorSets();
+
   createCommandBuffers();
   createSyncObjects();
 
@@ -55,6 +61,7 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipel
 }
 
 Renderer::~Renderer() {
+  vkDestroyRenderPass(device.getDevice(), renderPass, nullptr);
   vkDestroyDescriptorPool(device.getDevice(), descriptorPool, nullptr);
 
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -64,13 +71,94 @@ Renderer::~Renderer() {
   }
 }
 
+void Renderer::createRenderPass() {
+  VkAttachmentDescription colorAttachment{};
+  colorAttachment.format = swapChain.getSwapChainImageFormat();
+  colorAttachment.samples = device.getMsaaSamples();
+  colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference colorAttachmentRef{};
+  colorAttachmentRef.attachment = 0;
+  colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentDescription colorAttachmentResolve{};
+  colorAttachmentResolve.format = swapChain.getSwapChainImageFormat();
+  colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+  colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+  VkAttachmentReference colorAttachmentResolveRef{};
+  colorAttachmentResolveRef.attachment = 2;
+  colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentDescription depthAttachment{};
+  depthAttachment.format = buffers.findDepthFormat();
+  depthAttachment.samples = device.getMsaaSamples();
+  depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference depthAttachmentRef{};
+  depthAttachmentRef.attachment = 1;
+  depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  VkSubpassDescription subpass{};
+  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  subpass.colorAttachmentCount = 1;
+  subpass.pColorAttachments = &colorAttachmentRef;
+  subpass.pDepthStencilAttachment = &depthAttachmentRef;
+  subpass.pResolveAttachments = &colorAttachmentResolveRef;
+
+  // The tutorial did not explicitly show itself creating this struct.
+  VkSubpassDependency dependency{};
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+  std::array<VkAttachmentDescription, 3> attachments = {
+    colorAttachment,
+    depthAttachment,
+    colorAttachmentResolve
+  };
+  VkRenderPassCreateInfo renderPassInfo{};
+  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+  renderPassInfo.pAttachments = attachments.data();
+  renderPassInfo.subpassCount = 1;
+  renderPassInfo.pSubpasses = &subpass;
+  renderPassInfo.dependencyCount = 1;
+  renderPassInfo.pDependencies = &dependency;
+
+  if (vkCreateRenderPass(device.getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create render pass");
+  }
+}
+
 void Renderer::recreateSwapChain() {
 	swapChain.recreateSwapChain();
+  
+  for (auto& material : materials) {
+    material.updateExtent(swapChain.getSwapChainExtent());
+  }
+
   // note: we are not recreating the render pass.
   // if the app was moved between two monitors with different
   // dynamic ranges, it would be better to recreate the render pass.
   // the render pass is owned by Pipeline()
-  swapChainResources = SwapChainResources(
+  /*swapChainResources = SwapChainResources(*/
+  swapChainResources = std::make_unique<SwapChainResources>(
     device.getDevice(),
     device.getPhysicalDevice(),
     swapChain.getSwapChainExtent(),
@@ -78,7 +166,7 @@ void Renderer::recreateSwapChain() {
     swapChain.getSwapChainImageFormat(),
     buffers.findDepthFormat(),
     swapChain.getSwapChainImageViews(),
-    pipeline.getRenderPass());
+    renderPass);
 }
 
 // descriptor sets cannot be allocated directly they must be allocated from a pool,
@@ -253,8 +341,8 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   // and some values which define the size of the render area / clear color values.
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-  renderPassInfo.renderPass = pipeline.getRenderPass();
-  renderPassInfo.framebuffer = swapChainResources.getSwapChainFramebuffers()[imageIndex];
+  renderPassInfo.renderPass = renderPass;
+  renderPassInfo.framebuffer = swapChainResources.get()->getSwapChainFramebuffers()[imageIndex];
   renderPassInfo.renderArea.offset = {0, 0};
   renderPassInfo.renderArea.extent = swapChainExtent;
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -265,6 +353,9 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   // - VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
   vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+  // here on, moving inside each object
+
+  /*
   // bind the graphics pipeline
   // the second parameter specifies if the pipeline is graphics or compute
   vkCmdBindPipeline(
@@ -285,12 +376,13 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 	scissor.offset = {0, 0};
 	scissor.extent = swapChainExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+  */
 
   // per-object draw call moved in here
   for (auto& object : renderObjects) {
     object.recordCommandBuffer(
       commandBuffer,
-      pipeline.getPipelineLayout(),
+      // pipeline.getPipelineLayout(),
       currentFrame
     );
   }
@@ -301,4 +393,3 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     throw std::runtime_error("failed to record command buffer");
   }
 }
-

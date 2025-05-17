@@ -1,132 +1,29 @@
-#include "Pipeline.h"
+#include "GraphicsPipeline.h"
 #include <fstream>
 #include <stdexcept>
 
-Pipeline::Pipeline(Device& device, SwapChain& swapChain, Buffers& buffers) : device(device), swapChain(swapChain), buffers(buffers) {
-  createRenderPass();
-  createDescriptorSetLayout();
-  createGraphicsPipeline();
+// GraphicsPipeline::GraphicsPipeline(Device& device, SwapChain& swapChain, Buffers& buffers) : device(device), swapChain(swapChain), buffers(buffers) {
+GraphicsPipeline::GraphicsPipeline(Device& device, const PipelineConfig& config)
+  : device(device) {
+  // createRenderPass();
+  // createDescriptorSetLayout();
+  // createGraphicsPipeline();
+
+  createGraphicsPipeline(config);
 }
 
-Pipeline::~Pipeline() {
+GraphicsPipeline::~GraphicsPipeline() {
   // could happen inside ~Renderer
-  vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
+  /*vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);*/
   vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
   vkDestroyPipelineLayout(device.getDevice(), pipelineLayout, nullptr);
-  vkDestroyRenderPass(device.getDevice(), renderPass, nullptr);
+  /*vkDestroyRenderPass(device.getDevice(), renderPass, nullptr);*/
 }
 
-void Pipeline::createRenderPass() {
-  VkAttachmentDescription colorAttachment{};
-  colorAttachment.format = swapChain.getSwapChainImageFormat();
-  colorAttachment.samples = device.getMsaaSamples();
-  colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-  VkAttachmentReference colorAttachmentRef{};
-  colorAttachmentRef.attachment = 0;
-  colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-  VkAttachmentDescription colorAttachmentResolve{};
-  colorAttachmentResolve.format = swapChain.getSwapChainImageFormat();
-  colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-  colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-  VkAttachmentReference colorAttachmentResolveRef{};
-  colorAttachmentResolveRef.attachment = 2;
-  colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-  VkAttachmentDescription depthAttachment{};
-  depthAttachment.format = buffers.findDepthFormat();
-  depthAttachment.samples = device.getMsaaSamples();
-  depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  VkAttachmentReference depthAttachmentRef{};
-  depthAttachmentRef.attachment = 1;
-  depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  VkSubpassDescription subpass{};
-  subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-  subpass.colorAttachmentCount = 1;
-  subpass.pColorAttachments = &colorAttachmentRef;
-  subpass.pDepthStencilAttachment = &depthAttachmentRef;
-  subpass.pResolveAttachments = &colorAttachmentResolveRef;
-
-  // The tutorial did not explicitly show itself creating this struct.
-  VkSubpassDependency dependency{};
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-  std::array<VkAttachmentDescription, 3> attachments = {
-    colorAttachment,
-    depthAttachment,
-    colorAttachmentResolve
-  };
-  VkRenderPassCreateInfo renderPassInfo{};
-  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-  renderPassInfo.pAttachments = attachments.data();
-  renderPassInfo.subpassCount = 1;
-  renderPassInfo.pSubpasses = &subpass;
-  renderPassInfo.dependencyCount = 1;
-  renderPassInfo.pDependencies = &dependency;
-
-  if (vkCreateRenderPass(device.getDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create render pass");
-  }
-}
-
-// for uniforms
-// the rest of the uniform related code is in the Renderer class.
-void Pipeline::createDescriptorSetLayout() {
-  VkDescriptorSetLayoutBinding uboLayoutBinding{};
-  uboLayoutBinding.binding = 0;
-  uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  uboLayoutBinding.descriptorCount = 1;
-  uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-  // uboLayoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-  uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
-
-  VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-  samplerLayoutBinding.binding = 1;
-  samplerLayoutBinding.descriptorCount = 1;
-  samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  samplerLayoutBinding.pImmutableSamplers = nullptr;
-  samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-  std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-    uboLayoutBinding,
-    samplerLayoutBinding,
-  };
-
-  VkDescriptorSetLayoutCreateInfo layoutInfo{};
-  layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-  layoutInfo.pBindings = bindings.data();
-
-  if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create descriptor set layout");
-  }
-}
-
-void Pipeline::createGraphicsPipeline() {
-  auto vertShaderCode = readFile(vertPath);
-  auto fragShaderCode = readFile(fragPath);
+// void GraphicsPipeline::createGraphicsPipeline() {
+void GraphicsPipeline::createGraphicsPipeline(const PipelineConfig& config) {
+  auto vertShaderCode = readFile(config.vertPath);
+  auto fragShaderCode = readFile(config.fragPath);
 
   VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
   VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -167,14 +64,14 @@ void Pipeline::createGraphicsPipeline() {
   VkViewport viewport{};
   viewport.x = 0.0f;
   viewport.y = 0.0f;
-  viewport.width = (float) swapChain.getSwapChainExtent().width;
-  viewport.height = (float) swapChain.getSwapChainExtent().height;
+  viewport.width = (float) config.extent.width;
+  viewport.height = (float) config.extent.height;
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
   VkRect2D scissor{};
   scissor.offset = {0, 0};
-  scissor.extent = swapChain.getSwapChainExtent();
+  scissor.extent = config.extent;
 
   std::vector<VkDynamicState> dynamicStates = {
 		VK_DYNAMIC_STATE_VIEWPORT,
@@ -210,7 +107,7 @@ void Pipeline::createGraphicsPipeline() {
   VkPipelineMultisampleStateCreateInfo multisampling{};
   multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.sampleShadingEnable = VK_TRUE;
-  multisampling.rasterizationSamples = device.getMsaaSamples();
+  multisampling.rasterizationSamples = config.msaaSamples;
   multisampling.minSampleShading = 0.2f;
 	multisampling.pSampleMask = nullptr; // Optional
 	multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
@@ -251,7 +148,7 @@ void Pipeline::createGraphicsPipeline() {
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   // 1 now that we are using uniforms, otherwise this would be 0
 	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	pipelineLayoutInfo.pSetLayouts = &config.descriptorSetLayout;
 	// pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	// pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -284,7 +181,7 @@ void Pipeline::createGraphicsPipeline() {
   pipelineInfo.pColorBlendState = &colorBlending;
   pipelineInfo.pDynamicState = &dynamicState;
   pipelineInfo.layout = pipelineLayout;
-  pipelineInfo.renderPass = renderPass;
+  pipelineInfo.renderPass = config.renderPass;
   pipelineInfo.subpass = 0;
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
@@ -297,7 +194,7 @@ void Pipeline::createGraphicsPipeline() {
   vkDestroyShaderModule(device.getDevice(), vertShaderModule, nullptr);
 }
 
-VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
+VkShaderModule GraphicsPipeline::createShaderModule(const std::vector<char>& code) {
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.codeSize = code.size();
@@ -311,7 +208,7 @@ VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
   return shaderModule;
 }
 
-std::vector<char> Pipeline::readFile(const std::string& filename) {
+std::vector<char> GraphicsPipeline::readFile(const std::string& filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {

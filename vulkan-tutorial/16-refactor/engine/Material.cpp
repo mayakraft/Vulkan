@@ -1,25 +1,60 @@
 #include "Material.h"
 #include "Uniforms.h"
+#include "Renderer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
 
 Material::Material(
-  std::string texturePath,
   Device& device,
   Buffers& buffers,
-  SwapChain& swapChain)
-  : texturePath(texturePath),
-    device(device),
+  SwapChain& swapChain,
+  Renderer& renderer,
+  std::string texturePath)
+  : device(device),
     buffers(buffers),
-    swapChain(swapChain) { // VkDescriptorSetLayout layout) {
+    swapChain(swapChain),
+    renderer(renderer),
+    texturePath(texturePath)
+  {
+
+  createDescriptorSetLayout();
+
+  // todo: when swap chain is rebuilt, this extent is not updated
+  // viking room example
+  config = PipelineConfig{};
+  config.vertPath = "./shaders/simple.vert.spv";
+  config.fragPath = "./shaders/simple.frag.spv";
+  config.renderPass = renderer.getRenderPass();
+  config.extent = swapChain.getSwapChainExtent();
+  config.msaaSamples = device.getMsaaSamples();
+  config.descriptorSetLayout = descriptorSetLayout;
+  /*config(*/
+  /*  "./shaders/simple.vert.spv",*/
+  /*  "./shaders/simple.frag.spv",*/
+  /*  renderer.getRenderPass(),*/
+  /*  swapChain.getSwapChainExtent(),*/
+  /*  device.getMsaaSamples(),*/
+  /*  descriptorSetLayout),*/
+
+  createUniformBuffers();
 
   createTextureImage();
   createTextureImageView();
   createTextureSampler();
-  createUniformBuffers();
+
+  createDescriptorSets();
+
+  graphicsPipeline = std::make_unique<GraphicsPipeline>(device, config);
+}
+
+void Material::updateExtent(VkExtent2D newExtent) {
+  config.extent = newExtent;
+  /*graphicsPipeline.config.extent = newExtent;*/
 }
 
 Material::~Material() {
+  vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);
+
   // textures
   vkDestroySampler(device.getDevice(), textureSampler, nullptr);
   vkDestroyImageView(device.getDevice(), textureImageView, nullptr);
@@ -33,14 +68,54 @@ Material::~Material() {
   }
 }
 
-void Material::createDescriptorSets(
-  VkDescriptorPool descriptorPool,
-  std::vector<VkDescriptorSetLayout> layouts) {
+// for uniforms
+// the rest of the uniform related code is in the Renderer class.
+void Material::createDescriptorSetLayout() {
+  VkDescriptorSetLayoutBinding uboLayoutBinding{};
+  uboLayoutBinding.binding = 0;
+  uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  uboLayoutBinding.descriptorCount = 1;
+  uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  // uboLayoutBinding.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+  uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
-  /*std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, pipeline.getDescriptorSetLayout());*/
+  VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+  samplerLayoutBinding.binding = 1;
+  samplerLayoutBinding.descriptorCount = 1;
+  samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  samplerLayoutBinding.pImmutableSamplers = nullptr;
+  samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+  std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
+    uboLayoutBinding,
+    samplerLayoutBinding,
+  };
+
+  VkDescriptorSetLayoutCreateInfo layoutInfo{};
+  layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+  layoutInfo.pBindings = bindings.data();
+
+  if (vkCreateDescriptorSetLayout(device.getDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor set layout");
+  }
+}
+
+/*void Material::createDescriptorSets(*/
+/*  VkDescriptorPool descriptorPool,*/
+/*  std::vector<VkDescriptorSetLayout> layouts) {*/
+void Material::createDescriptorSets() {
+  /*std::vector<VkDescriptorSetLayout> layouts(*/
+  /*  MAX_FRAMES_IN_FLIGHT,*/
+  /*  pipeline.getDescriptorSetLayout());*/
+  /*std::vector<VkDescriptorSetLayout> layouts(*/
+  /*  MAX_FRAMES_IN_FLIGHT,*/
+  /*  config.descriptorSetLayout);*/
+  std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = descriptorPool;
+  allocInfo.descriptorPool = renderer.getDescriptorPool();
   allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
   allocInfo.pSetLayouts = layouts.data();
 

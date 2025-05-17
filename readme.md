@@ -22,29 +22,29 @@ Prerequisites: Xcode command line tools. I'm using makefiles, no need to actuall
 
 Install [VulkanSDK](https://vulkan.lunarg.com/sdk/home#mac), which installs MoltenVK. I installed Vulkan into `/Library`
 
-> my folder structure looked like: `/Library/VulkanSDK/1.3.268.1/macOS/include/vulkan/vulkan.h`
+> my folder structure looked like: `/Library/VulkanSDK/1.4.309.0/macOS/include/vulkan/vulkan.h`
 
 ### system environment variables
 
 The app will not run unless your system knows the location of the Vulkan library. You can do it two ways, either a quick fix by running these in the terminal window (however, you will need to run them every time you open a new terminal, so it's really not ideal):
 
 ```sh
-export VULKAN_SDK=/Library/VulkanSDK/1.3.268.1
-export DYLD_LIBRARY_PATH=/Library/VulkanSDK/1.3.268.1/macOS/lib
+export VULKAN_SDK=/Library/VulkanSDK/1.4.309.0
+export DYLD_LIBRARY_PATH=/Library/VulkanSDK/1.4.309.0/macOS/lib
 ```
 
 or the better solution, modify your `~/.zshrc` or `~/.bashrc` file (re-open a new terminal window):
 
 ```sh
 # Vulkan SDK setup
-export VULKAN_SDK=/Library/VulkanSDK/1.3.268.1
+export VULKAN_SDK=/Library/VulkanSDK/1.4.309.0
 export DYLD_LIBRARY_PATH=$VULKAN_SDK/macOS/lib:$DYLD_LIBRARY_PATH
 ```
 
 As a footnote, I'm not sure how important this is to set:
 
 ```sh
-export VK_ICD_FILENAMES=/Library/VulkanSDK/1.3.268.1/MoltenVK/dylib/macOS/MoltenVK_icd.json
+export VK_ICD_FILENAMES=/Library/VulkanSDK/1.4.309.0/MoltenVK/dylib/macOS/MoltenVK_icd.json
 ```
 
 [source](https://www.reddit.com/r/vulkan/comments/ztxjtw/vulkan_sdk_on_mac_vscode_isnt_working/)

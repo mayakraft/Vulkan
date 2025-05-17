@@ -4,10 +4,10 @@
 #include "../lib/tiny_obj_loader.h"
 
 RenderObject::RenderObject(
-  std::string modelPath,
   Device& device,
   Buffers& buffers,
-  Material& material)
+  Material& material,
+  std::string modelPath)
   : device(device),
     buffers(buffers),
     material(material) {
@@ -124,10 +124,34 @@ void RenderObject::createIndexBuffer() {
 
 void RenderObject::recordCommandBuffer(
   VkCommandBuffer commandBuffer,
-  VkPipelineLayout pipelineLayout,
+  /*VkPipelineLayout pipelineLayout,*/
   uint32_t currentFrame
   // VkDescriptorSet descriptorSet
 ) {
+
+  // bind the graphics pipeline
+  // the second parameter specifies if the pipeline is graphics or compute
+  vkCmdBindPipeline(
+    commandBuffer,
+    VK_PIPELINE_BIND_POINT_GRAPHICS,
+    material.getPipeline());
+
+  VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(material.config.extent.width);
+	viewport.height = static_cast<float>(material.config.extent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = {0, 0};
+	scissor.extent = material.config.extent;
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+  // end of the recent copy from renderer.
+
 	VkBuffer vertexBuffers[] = {vertexBuffer};
 	VkDeviceSize offsets[] = {0};
 
@@ -137,11 +161,12 @@ void RenderObject::recordCommandBuffer(
   vkCmdBindDescriptorSets(
     commandBuffer,
     VK_PIPELINE_BIND_POINT_GRAPHICS,
-    pipelineLayout,
+    // pipelineLayout,
     // pipeline.getPipelineLayout(),
+    material.getPipelineLayout(),
     0,
     1,
-    &(material.getDescriptorSets()[currentFrame]),
+    &(material.descriptorSets[currentFrame]),
     0,
     nullptr);
 

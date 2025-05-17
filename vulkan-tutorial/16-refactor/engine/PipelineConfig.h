@@ -4,14 +4,12 @@
 #include <string>
 #include <cstdint>
 
-typedef struct {
-  VkPipelineViewportStateCreateInfo viewportInfo;
-  VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-  VkPipelineRasterizationStateCreateInfo rasterizationInfo;
-  VkPipelineMultisampleStateCreateInfo multisampleInfo;
-  VkPipelineColorBlendAttachmentState colorBlendAttachment;
-  VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+typedef struct PipelineConfig {
+  std::string vertPath;
+  std::string fragPath;
   VkRenderPass renderPass = VK_NULL_HANDLE;
-  uint32_t subpass = 0;
-} PipelineConfigInfo;
+  VkExtent2D extent;
+  VkSampleCountFlagBits msaaSamples;
+  VkDescriptorSetLayout descriptorSetLayout;
+} PipelineConfig;
 

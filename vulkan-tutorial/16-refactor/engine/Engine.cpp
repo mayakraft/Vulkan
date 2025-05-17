@@ -7,13 +7,11 @@ Engine::Engine() {
   device = new Device(window, appName, engineName);
   buffers = new Buffers(*device);
   swapChain = new SwapChain(*device);
-  pipeline = new Pipeline(*device, *swapChain, *buffers);
-  renderer = new Renderer(*device, *swapChain, *buffers, *pipeline);
+  renderer = new Renderer(*device, *swapChain, *buffers);
 }
 
 Engine::~Engine() {
   delete renderer;
-  delete pipeline;
   delete swapChain;
   delete buffers;
   delete device;

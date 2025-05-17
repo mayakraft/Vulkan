@@ -4,20 +4,22 @@
 #include <vector>
 #include "Device.h"
 #include "SwapChain.h"
-#include "Buffers.h"
-#include "Image.h"
-#include "ImageView.h"
-#include "Pipeline.h"
+#include "memory/Buffers.h"
+#include "memory/Image.h"
+#include "memory/ImageView.h"
 #include "Material.h"
 #include "SwapChainResources.h"
 #include "RenderObject.h"
 
 class Renderer {
 public:
-  Renderer(Device& device, SwapChain& swapChain, Buffers& buffers, Pipeline& pipeline);
+  Renderer(Device& device, SwapChain& swapChain, Buffers& buffers);
   ~Renderer();
 
   void drawFrame();
+
+  VkRenderPass getRenderPass() const { return renderPass; }
+  VkDescriptorPool getDescriptorPool() const { return descriptorPool; }
 
   bool framebufferResized = false;
 
@@ -39,8 +41,10 @@ private:
   Device& device;
   SwapChain& swapChain;
   Buffers& buffers;
-  Pipeline& pipeline;
-  SwapChainResources swapChainResources;
+  std::unique_ptr<SwapChainResources> swapChainResources;
+
+  VkRenderPass renderPass;
+  void createRenderPass();
 
   // command buffers are automatically freed when their command pool is destroyed
   std::vector<VkCommandBuffer> commandBuffers;

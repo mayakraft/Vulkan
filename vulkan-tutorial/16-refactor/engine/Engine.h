@@ -3,9 +3,9 @@
 #include <GLFW/glfw3.h>
 #include "Debug.h"
 #include "Device.h"
-#include "Buffers.h"
+#include "memory/Buffers.h"
 #include "SwapChain.h"
-#include "Pipeline.h"
+/*#include "Pipeline.h"*/
 #include "Renderer.h"
 
 class Engine {
@@ -23,7 +23,7 @@ private:
   Device* device;
   Buffers* buffers;
   SwapChain* swapChain;
-  Pipeline* pipeline;
+  /*Pipeline* pipeline;*/
   Renderer* renderer;
 
   bool framebufferResized = false;

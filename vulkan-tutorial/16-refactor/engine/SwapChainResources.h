@@ -2,8 +2,8 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include "Image.h"
-#include "ImageView.h"
+#include "memory/Image.h"
+#include "memory/ImageView.h"
 
 class SwapChainResources {
 public:

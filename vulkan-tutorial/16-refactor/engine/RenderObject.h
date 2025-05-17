@@ -4,22 +4,22 @@
 #include <glm/glm.hpp>
 #include <string>
 #include "Device.h"
-#include "Buffers.h"
+#include "memory/Buffers.h"
 #include "Material.h"
 #include "Vertex.h"
 
 class RenderObject {
 public:
   RenderObject(
-    std::string modelPath,
     Device& device,
     Buffers& buffers,
-    Material& material);
+    Material& material,
+    std::string modelPath);
   ~RenderObject();
 
   void recordCommandBuffer(
     VkCommandBuffer commandBuffer,
-    VkPipelineLayout pipelineLayout,
+    /*VkPipelineLayout pipelineLayout,*/
     uint32_t currentFrame);
 
   // Disallow copying
