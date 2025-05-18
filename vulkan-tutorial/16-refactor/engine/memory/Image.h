@@ -21,12 +21,9 @@ public:
 
   VkImage getImage() const { return image; }
 
-  // Delete copy semantics
 	Image(const Image&) = delete;
 	Image& operator=(const Image&) = delete;
-	// Custom move constructor
 	Image(Image&& other) noexcept;
-	// Custom move assignment
 	Image& operator=(Image&& other) noexcept;
 
 private:
@@ -34,10 +31,5 @@ private:
 	VkPhysicalDevice physicalDevice;
   VkImage image = VK_NULL_HANDLE;
   VkDeviceMemory memory = VK_NULL_HANDLE;
-
-  // this is duplicated in Buffers.h
-  uint32_t findMemoryType(
-    uint32_t typeFilter,
-    VkMemoryPropertyFlags properties);
 };
 

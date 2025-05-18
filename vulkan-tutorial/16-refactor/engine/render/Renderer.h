@@ -2,13 +2,13 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include "Device.h"
-#include "SwapChain.h"
-#include "memory/Buffers.h"
-#include "memory/Image.h"
-#include "memory/ImageView.h"
+#include "../core/Device.h"
+#include "../core/SwapChain.h"
+#include "../core/SwapChainResources.h"
+#include "../memory/Buffers.h"
+#include "../memory/Image.h"
+#include "../memory/ImageView.h"
 #include "Material.h"
-#include "SwapChainResources.h"
 #include "RenderObject.h"
 
 class Renderer {

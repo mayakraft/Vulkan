@@ -1,5 +1,5 @@
-#include "RenderObject.h"
 #include <stdio.h>
+#include "RenderObject.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../lib/tiny_obj_loader.h"
 

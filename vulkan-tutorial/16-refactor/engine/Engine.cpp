@@ -1,5 +1,5 @@
-#include "Engine.h"
 #include <stdexcept>
+#include "Engine.h"
 
 Engine::Engine() {
   initWindow();

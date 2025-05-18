@@ -170,7 +170,8 @@ SwapChainResources& SwapChainResources::operator=(SwapChainResources&& other) no
     colorFormat = other.colorFormat;
     depthFormat = other.depthFormat;
     renderPass = other.renderPass;
-    // Note: it's safe to assign a reference to a const vector since we're not owning it
+
+    // it's safe to assign a reference to a const vector since we're not owning it
     const_cast<std::vector<VkImageView>&>(swapChainImageViews) = other.swapChainImageViews;
 
     colorImage = std::move(other.colorImage);

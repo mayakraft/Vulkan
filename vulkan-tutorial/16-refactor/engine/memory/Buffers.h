@@ -8,6 +8,11 @@ class Device;
 
 class Buffers {
 public:
+	static uint32_t findMemoryType(
+    VkPhysicalDevice physicalDevice,
+    uint32_t typeFilter,
+    VkMemoryPropertyFlags properties);
+
 	Buffers(Device& device): device(device) {}
   ~Buffers() {}
 
@@ -74,10 +79,5 @@ private:
 		const std::vector<VkFormat>& candidates,
 		VkImageTiling tiling,
 		VkFormatFeatureFlags features);
-
-  // this is duplicated in Image.h
-	uint32_t findMemoryType(
-    uint32_t typeFilter,
-    VkMemoryPropertyFlags properties);
 };
 

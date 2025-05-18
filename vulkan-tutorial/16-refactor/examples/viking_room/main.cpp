@@ -1,7 +1,6 @@
-#include "engine/Engine.h"
-
 #include <iostream>
 #include <stdexcept>
+#include "../../engine/Engine.h"
 
 int main() {
 	try {

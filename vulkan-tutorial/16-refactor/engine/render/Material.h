@@ -2,9 +2,9 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include "Device.h"
-#include "memory/Buffers.h"
-#include "SwapChain.h"
+#include "../core/Device.h"
+#include "../core/SwapChain.h"
+#include "../memory/Buffers.h"
 #include "GraphicsPipeline.h"
 #include "PipelineConfig.h"
 
@@ -30,6 +30,8 @@ public:
 
   VkPipeline getPipeline() const { return graphicsPipeline.get()->get(); }
   VkPipelineLayout getPipelineLayout() const { return graphicsPipeline.get()->getLayout(); }
+  /*VkPipeline getPipeline() const { return graphicsPipeline.get(); }*/
+  /*VkPipelineLayout getPipelineLayout() const { return graphicsPipeline.getLayout(); }*/
 
   /*void createDescriptorSets(*/
   /*  VkDescriptorPool descriptorPool,*/
@@ -61,7 +63,8 @@ private:
   SwapChain& swapChain;
   Renderer& renderer;
 
-  // GraphicsPipeline& graphicsPipeline;
+  // I think I can remove the unique ptr now. update: nope.
+  /*GraphicsPipeline graphicsPipeline;*/
   std::unique_ptr<GraphicsPipeline> graphicsPipeline;
 
   void createTextureImage();

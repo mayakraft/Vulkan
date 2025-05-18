@@ -3,16 +3,15 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <string>
-#include "Device.h"
-#include "SwapChain.h"
-#include "memory/Buffers.h"
-#include "Vertex.h"
+#include "../core/SwapChain.h"
+#include "../memory/Buffers.h"
+#include "../geometry/Vertex.h"
 #include "PipelineConfig.h"
 
 class GraphicsPipeline {
 public:
   // PipelineBuilder(Device& device, SwapChain& swapChain, Buffers& buffers);
-  GraphicsPipeline(Device& device, const PipelineConfig& config);
+  GraphicsPipeline(VkDevice device, const PipelineConfig& config);
   ~GraphicsPipeline();
 
   VkPipeline get() const { return graphicsPipeline; }
@@ -24,7 +23,8 @@ public:
   /*VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout; }*/
 
 private:
-  Device& device;
+  VkDevice device;
+  /*Device& device;*/
   /*SwapChain& swapChain;*/
   /*Buffers& buffers;*/
   VkPipeline graphicsPipeline;

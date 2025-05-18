@@ -1,5 +1,5 @@
 #include "Material.h"
-#include "Uniforms.h"
+#include "../geometry/Uniforms.h"
 #include "Renderer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../lib/stb_image.h"
@@ -19,11 +19,10 @@ Material::Material(
 
   createDescriptorSetLayout();
 
-  // todo: when swap chain is rebuilt, this extent is not updated
   // viking room example
   config = PipelineConfig{};
-  config.vertPath = "./shaders/simple.vert.spv";
-  config.fragPath = "./shaders/simple.frag.spv";
+  config.vertPath = "./examples/viking_room/shaders/simple.vert.spv";
+  config.fragPath = "./examples/viking_room/shaders/simple.frag.spv";
   config.renderPass = renderer.getRenderPass();
   config.extent = swapChain.getSwapChainExtent();
   config.msaaSamples = device.getMsaaSamples();
@@ -44,7 +43,8 @@ Material::Material(
 
   createDescriptorSets();
 
-  graphicsPipeline = std::make_unique<GraphicsPipeline>(device, config);
+  graphicsPipeline = std::make_unique<GraphicsPipeline>(device.getDevice(), config);
+  /*graphicsPipeline = GraphicsPipeline(device.getDevice(), config);*/
 }
 
 void Material::updateExtent(VkExtent2D newExtent) {

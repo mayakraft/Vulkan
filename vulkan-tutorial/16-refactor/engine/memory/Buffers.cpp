@@ -1,5 +1,5 @@
 #include "Buffers.h"
-#include "Device.h"
+#include "../core/Device.h"
 
 void Buffers::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
   VkBufferCreateInfo bufferInfo{};
@@ -18,7 +18,7 @@ void Buffers::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemory
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+  allocInfo.memoryTypeIndex = Buffers::findMemoryType(device.getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
 
   if (vkAllocateMemory(device.getDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate buffer memory");
@@ -108,7 +108,7 @@ void Buffers::createImage(
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+  allocInfo.memoryTypeIndex = Buffers::findMemoryType(device.getPhysicalDevice(), memRequirements.memoryTypeBits, properties);
 
   if (vkAllocateMemory(device.getDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate image memory");
@@ -302,9 +302,9 @@ void Buffers::generateMipmaps(
   endSingleTimeCommands(commandBuffer);
 }
 
-uint32_t Buffers::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t Buffers::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memProperties;
-  vkGetPhysicalDeviceMemoryProperties(device.getPhysicalDevice(), &memProperties);
+  vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
   for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
     if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
       return i;

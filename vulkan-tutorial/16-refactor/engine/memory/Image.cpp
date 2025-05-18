@@ -1,5 +1,6 @@
-#include "Image.h"
 #include <stdexcept>
+#include "Image.h"
+#include "Buffers.h"
 
 Image::Image(
 	VkDevice device,
@@ -39,7 +40,10 @@ Image::Image(
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+  allocInfo.memoryTypeIndex = Buffers::findMemoryType(
+    physicalDevice,
+    memRequirements.memoryTypeBits,
+    properties);
 
   if (vkAllocateMemory(device, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
     throw std::runtime_error("failed to allocate image memory");
@@ -93,13 +97,3 @@ Image& Image::operator=(Image&& other) noexcept {
   return *this;
 }
 
-uint32_t Image::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-  VkPhysicalDeviceMemoryProperties memProperties;
-  vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-    if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-      return i;
-    }
-  }
-  throw std::runtime_error("failed to find suitable memory type");
-}

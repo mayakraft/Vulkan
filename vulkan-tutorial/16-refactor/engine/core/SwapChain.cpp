@@ -1,7 +1,7 @@
-#include "SwapChain.h"
 #include <stdexcept>
 #include <algorithm>
-#include "Renderer.h"
+#include "SwapChain.h"
+#include "../memory/ImageView.h"
 #include "Debug.h"
 
 SwapChain::SwapChain(Device& device) : device(device) {
@@ -160,29 +160,13 @@ void SwapChain::createSwapChain() {
 // https://vulkan-tutorial.com/en/Texture_mapping/Image_view_and_sampler
 void SwapChain::createImageViews() {
   swapChainImageViews.resize(swapChainImages.size());
-
   for (size_t i = 0; i < swapChainImages.size(); i++) {
-    VkImageViewCreateInfo viewInfo{};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = swapChainImages[i];
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = swapChainImageFormat;
-
-    viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    // mipmap level but this is hard coded to 1
-    viewInfo.subresourceRange.levelCount = 1; 
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    if (vkCreateImageView(device.getDevice(), &viewInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS) {
-      throw std::runtime_error("failed to create image views");
-    }
+    swapChainImageViews[i] = ImageView::CreateImageView(
+      device.getDevice(),
+      swapChainImages[i],
+      swapChainImageFormat,
+      VK_IMAGE_ASPECT_COLOR_BIT,
+      1);
   }
 }
 

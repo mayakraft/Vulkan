@@ -1,13 +1,14 @@
-#include "ImageView.h"
 #include <stdexcept>
+#include "ImageView.h"
 
-ImageView::ImageView(
+VkImageView ImageView::CreateImageView(
   VkDevice device,
   VkImage image,
   VkFormat format,
   VkImageAspectFlags aspectFlags,
-  uint32_t mipLevels) : device(device) {
+  uint32_t mipLevels) {
 
+  VkImageView imageView;
 	VkImageViewCreateInfo viewInfo{};
   viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   viewInfo.image = image;
@@ -22,6 +23,16 @@ ImageView::ImageView(
   if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
     throw std::runtime_error("failed to create texture image view");
   }
+  return imageView;
+}
+
+ImageView::ImageView(
+  VkDevice device,
+  VkImage image,
+  VkFormat format,
+  VkImageAspectFlags aspectFlags,
+  uint32_t mipLevels) : device(device) {
+  imageView = ImageView::CreateImageView(device, image, format, aspectFlags, mipLevels);
 }
 
 ImageView::~ImageView() {

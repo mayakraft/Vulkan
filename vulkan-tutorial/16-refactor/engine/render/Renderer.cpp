@@ -1,14 +1,13 @@
-#include "Renderer.h"
-#include "memory/Buffers.h"
 #include <stdexcept>
-#include "Uniforms.h"
+#include <chrono>
+#include <array>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
-#include <array>
+#include "Renderer.h"
+#include "../geometry/Uniforms.h"
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 	auto renderer = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
@@ -48,8 +47,8 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers)
     swapChain.getSwapChainImageViews(),
     renderPass);
 
-  materials.emplace_back(device, buffers, swapChain, *this, "./assets/viking_room.png");
-  renderObjects.emplace_back(device, buffers, materials[0], "./assets/viking_room.obj");
+  materials.emplace_back(device, buffers, swapChain, *this, "./examples/viking_room/assets/viking_room.png");
+  renderObjects.emplace_back(device, buffers, materials[0], "./examples/viking_room/assets/viking_room.obj");
 
   // for (auto& material : materials) material.createDescriptorSets();
 

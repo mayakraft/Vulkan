@@ -5,6 +5,13 @@
 
 class ImageView {
 public:
+  static VkImageView CreateImageView(
+		VkDevice device,
+    VkImage image,
+    VkFormat format,
+    VkImageAspectFlags aspectFlags,
+    uint32_t mipLevels);
+
   ImageView(
 		VkDevice device,
     VkImage image,
@@ -16,12 +23,9 @@ public:
 
   VkImageView getImageView() const { return imageView; }
 
-  // Delete copy semantics
 	ImageView(const ImageView&) = delete;
 	ImageView& operator=(const ImageView&) = delete;
-	// Custom move constructor
 	ImageView(ImageView&& other) noexcept;
-	// Custom move assignment
 	ImageView& operator=(ImageView&& other) noexcept;
 
 private:

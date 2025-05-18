@@ -3,10 +3,10 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <string>
-#include "Device.h"
-#include "memory/Buffers.h"
+#include "../core/Device.h"
+#include "../memory/Buffers.h"
+#include "../geometry/Vertex.h"
 #include "Material.h"
-#include "Vertex.h"
 
 class RenderObject {
 public:

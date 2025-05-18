@@ -2,8 +2,8 @@
 
 #include <vulkan/vulkan.h>
 #include <vector>
-#include "memory/Image.h"
-#include "memory/ImageView.h"
+#include "../memory/Image.h"
+#include "../memory/ImageView.h"
 
 class SwapChainResources {
 public:
@@ -25,12 +25,9 @@ public:
     return swapChainFramebuffers;
   }
 
-  // Delete copy semantics
   SwapChainResources(const SwapChainResources&) = delete;
   SwapChainResources& operator=(const SwapChainResources&) = delete;
-	// Custom move constructor
   SwapChainResources(SwapChainResources&& other) noexcept;
-	// Custom move assignment
   SwapChainResources& operator=(SwapChainResources&& other) noexcept;
 
 private:

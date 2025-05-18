@@ -1,26 +1,17 @@
-#include "GraphicsPipeline.h"
 #include <fstream>
 #include <stdexcept>
+#include "GraphicsPipeline.h"
 
-// GraphicsPipeline::GraphicsPipeline(Device& device, SwapChain& swapChain, Buffers& buffers) : device(device), swapChain(swapChain), buffers(buffers) {
-GraphicsPipeline::GraphicsPipeline(Device& device, const PipelineConfig& config)
+GraphicsPipeline::GraphicsPipeline(VkDevice device, const PipelineConfig& config)
   : device(device) {
-  // createRenderPass();
-  // createDescriptorSetLayout();
-  // createGraphicsPipeline();
-
   createGraphicsPipeline(config);
 }
 
 GraphicsPipeline::~GraphicsPipeline() {
-  // could happen inside ~Renderer
-  /*vkDestroyDescriptorSetLayout(device.getDevice(), descriptorSetLayout, nullptr);*/
-  vkDestroyPipeline(device.getDevice(), graphicsPipeline, nullptr);
-  vkDestroyPipelineLayout(device.getDevice(), pipelineLayout, nullptr);
-  /*vkDestroyRenderPass(device.getDevice(), renderPass, nullptr);*/
+  vkDestroyPipeline(device, graphicsPipeline, nullptr);
+  vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 }
 
-// void GraphicsPipeline::createGraphicsPipeline() {
 void GraphicsPipeline::createGraphicsPipeline(const PipelineConfig& config) {
   auto vertShaderCode = readFile(config.vertPath);
   auto fragShaderCode = readFile(config.fragPath);
@@ -152,7 +143,7 @@ void GraphicsPipeline::createGraphicsPipeline(const PipelineConfig& config) {
 	// pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	// pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-  if (vkCreatePipelineLayout(device.getDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+  if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout");
   }
 
@@ -186,12 +177,12 @@ void GraphicsPipeline::createGraphicsPipeline(const PipelineConfig& config) {
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
 
-  if (vkCreateGraphicsPipelines(device.getDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+  if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
     throw std::runtime_error("failed to create graphics pipeline");
   }
 
-  vkDestroyShaderModule(device.getDevice(), fragShaderModule, nullptr);
-  vkDestroyShaderModule(device.getDevice(), vertShaderModule, nullptr);
+  vkDestroyShaderModule(device, fragShaderModule, nullptr);
+  vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 VkShaderModule GraphicsPipeline::createShaderModule(const std::vector<char>& code) {
@@ -201,7 +192,7 @@ VkShaderModule GraphicsPipeline::createShaderModule(const std::vector<char>& cod
   createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
   VkShaderModule shaderModule;
-  if (vkCreateShaderModule(device.getDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+  if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
     throw std::runtime_error("failed to create shader module");
   }
 

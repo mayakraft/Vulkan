@@ -2,11 +2,10 @@
 
 #include <GLFW/glfw3.h>
 #include "Debug.h"
-#include "Device.h"
+#include "core/Device.h"
 #include "memory/Buffers.h"
-#include "SwapChain.h"
-/*#include "Pipeline.h"*/
-#include "Renderer.h"
+#include "core/SwapChain.h"
+#include "render/Renderer.h"
 
 class Engine {
 public:
@@ -23,7 +22,6 @@ private:
   Device* device;
   Buffers* buffers;
   SwapChain* swapChain;
-  /*Pipeline* pipeline;*/
   Renderer* renderer;
 
   bool framebufferResized = false;
