@@ -1,5 +1,13 @@
 include .env
 
+# Usage:
+# run with `make`
+# options:
+# make BUILD=debug
+# make BUILD=release
+# make EXAMPLE=viking_room
+# make EXAMPLE=triangle (not yet)
+
 CXX = g++
 TARGET_DIR = bin
 BUILD_DIR = build
@@ -19,11 +27,8 @@ OBJECTS := $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SOURCES))
 INCLUDES = -Iengine -I${VULKAN_SDK}/macOS/include `pkg-config --cflags-only-I glfw3`
 LDFLAGS = -L${VULKAN_SDK}/macOS/lib -lvulkan `pkg-config --static --libs glfw3`
 
-# Debug/release
-# default to debug build
+# Allow for either debug or release builds [default=debug]
 BUILD ?= debug
-
-# run either by writing `make`, `make BUILD=debug` or `make BUILD=release`
 ifeq ($(BUILD),debug)
   CXXFLAGS = -std=c++17 -g -O0 -DDEBUG $(INCLUDES)
 else ifeq ($(BUILD),release)

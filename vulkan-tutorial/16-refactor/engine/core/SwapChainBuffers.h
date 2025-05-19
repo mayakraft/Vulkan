@@ -5,9 +5,9 @@
 #include "../memory/Image.h"
 #include "../memory/ImageView.h"
 
-class SwapChainResources {
+class SwapChainBuffers {
 public:
-  SwapChainResources(
+  SwapChainBuffers(
     VkDevice device,
     VkPhysicalDevice physicalDevice,
     VkExtent2D swapChainExtent,
@@ -17,7 +17,7 @@ public:
     const std::vector<VkImageView>& swapChainImageViews,
     VkRenderPass renderPass);
 
-  ~SwapChainResources();
+  ~SwapChainBuffers();
 
   void recreateSwapChain();
 
@@ -25,10 +25,10 @@ public:
     return swapChainFramebuffers;
   }
 
-  SwapChainResources(const SwapChainResources&) = delete;
-  SwapChainResources& operator=(const SwapChainResources&) = delete;
-  SwapChainResources(SwapChainResources&& other) noexcept;
-  SwapChainResources& operator=(SwapChainResources&& other) noexcept;
+  SwapChainBuffers(const SwapChainBuffers&) = delete;
+  SwapChainBuffers& operator=(const SwapChainBuffers&) = delete;
+  SwapChainBuffers(SwapChainBuffers&& other) noexcept;
+  SwapChainBuffers& operator=(SwapChainBuffers&& other) noexcept;
 
 private:
   VkDevice device;

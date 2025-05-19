@@ -27,6 +27,7 @@ Material::Material(
   config.extent = swapChain.getSwapChainExtent();
   config.msaaSamples = device.getMsaaSamples();
   config.descriptorSetLayout = descriptorSetLayout;
+  config.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   /*config(*/
   /*  "./shaders/simple.vert.spv",*/
   /*  "./shaders/simple.frag.spv",*/
@@ -101,16 +102,7 @@ void Material::createDescriptorSetLayout() {
   }
 }
 
-/*void Material::createDescriptorSets(*/
-/*  VkDescriptorPool descriptorPool,*/
-/*  std::vector<VkDescriptorSetLayout> layouts) {*/
 void Material::createDescriptorSets() {
-  /*std::vector<VkDescriptorSetLayout> layouts(*/
-  /*  MAX_FRAMES_IN_FLIGHT,*/
-  /*  pipeline.getDescriptorSetLayout());*/
-  /*std::vector<VkDescriptorSetLayout> layouts(*/
-  /*  MAX_FRAMES_IN_FLIGHT,*/
-  /*  config.descriptorSetLayout);*/
   std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
   VkDescriptorSetAllocateInfo allocInfo{};

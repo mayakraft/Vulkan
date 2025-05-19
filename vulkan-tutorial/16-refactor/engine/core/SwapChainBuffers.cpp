@@ -1,6 +1,6 @@
-#include "SwapChainResources.h"
+#include "SwapChainBuffers.h"
 
-SwapChainResources::SwapChainResources(
+SwapChainBuffers::SwapChainBuffers(
   VkDevice device,
   VkPhysicalDevice physicalDevice,
   VkExtent2D swapChainExtent,
@@ -55,11 +55,11 @@ SwapChainResources::SwapChainResources(
   createFramebuffers();
 }
 
-SwapChainResources::~SwapChainResources() {
+SwapChainBuffers::~SwapChainBuffers() {
   deallocAll();
 }
 
-void SwapChainResources::deallocAll() {
+void SwapChainBuffers::deallocAll() {
   for (auto framebuffer : swapChainFramebuffers) {
     if (framebuffer != VK_NULL_HANDLE) {
       vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -67,7 +67,7 @@ void SwapChainResources::deallocAll() {
   }
 }
 
-void SwapChainResources::createFramebuffers() {
+void SwapChainBuffers::createFramebuffers() {
   swapChainFramebuffers.resize(swapChainImageViews.size());
 
   for (size_t i = 0; i < swapChainImageViews.size(); i++) {
@@ -92,7 +92,7 @@ void SwapChainResources::createFramebuffers() {
   }
 }
 
-void SwapChainResources::recreateSwapChain() {
+void SwapChainBuffers::recreateSwapChain() {
   deallocAll();
 
   colorImage = Image(
@@ -137,7 +137,7 @@ void SwapChainResources::recreateSwapChain() {
 	createFramebuffers();
 }
 
-SwapChainResources::SwapChainResources(SwapChainResources&& other) noexcept
+SwapChainBuffers::SwapChainBuffers(SwapChainBuffers&& other) noexcept
   : device(other.device),
     physicalDevice(other.physicalDevice),
     swapChainExtent(other.swapChainExtent),
@@ -156,7 +156,7 @@ SwapChainResources::SwapChainResources(SwapChainResources&& other) noexcept
   other.swapChainFramebuffers.clear();
 }
 
-SwapChainResources& SwapChainResources::operator=(SwapChainResources&& other) noexcept {
+SwapChainBuffers& SwapChainBuffers::operator=(SwapChainBuffers&& other) noexcept {
   if (this != &other) {
     // Clean up existing framebuffers
     for (auto framebuffer : swapChainFramebuffers) {

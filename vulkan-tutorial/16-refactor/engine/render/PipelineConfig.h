@@ -11,5 +11,6 @@ typedef struct PipelineConfig {
   VkExtent2D extent;
   VkSampleCountFlagBits msaaSamples;
   VkDescriptorSetLayout descriptorSetLayout;
+  VkPrimitiveTopology inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 } PipelineConfig;
 

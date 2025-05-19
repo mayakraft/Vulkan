@@ -27,17 +27,8 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers)
   createRenderPass();
   createDescriptorPool();
 
-  /*swapChainResources = SwapChainResources(*/
-  /*  device.getDevice(),*/
-  /*  device.getPhysicalDevice(),*/
-  /*  swapChain.getSwapChainExtent(),*/
-  /*  device.getMsaaSamples(),*/
-  /*  swapChain.getSwapChainImageFormat(),*/
-  /*  buffers.findDepthFormat(),*/
-  /*  swapChain.getSwapChainImageViews(),*/
-  /*  renderPass);*/
-
-  swapChainResources = std::make_unique<SwapChainResources>(
+  /*swapChainBuffers = SwapChainBuffers(*/
+  swapChainBuffers = std::make_unique<SwapChainBuffers>(
     device.getDevice(),
     device.getPhysicalDevice(),
     swapChain.getSwapChainExtent(),
@@ -47,10 +38,9 @@ Renderer::Renderer(Device& device, SwapChain& swapChain, Buffers& buffers)
     swapChain.getSwapChainImageViews(),
     renderPass);
 
+  models.emplace_back(device, buffers, "./examples/viking_room/assets/viking_room.obj");
   materials.emplace_back(device, buffers, swapChain, *this, "./examples/viking_room/assets/viking_room.png");
-  renderObjects.emplace_back(device, buffers, materials[0], "./examples/viking_room/assets/viking_room.obj");
-
-  // for (auto& material : materials) material.createDescriptorSets();
+  renderObjects.emplace_back(models[0], materials[0]);
 
   createCommandBuffers();
   createSyncObjects();
@@ -156,8 +146,8 @@ void Renderer::recreateSwapChain() {
   // if the app was moved between two monitors with different
   // dynamic ranges, it would be better to recreate the render pass.
   // the render pass is owned by Pipeline()
-  /*swapChainResources = SwapChainResources(*/
-  swapChainResources = std::make_unique<SwapChainResources>(
+  /*swapChainBuffers = SwapChainBuffers(*/
+  swapChainBuffers = std::make_unique<SwapChainBuffers>(
     device.getDevice(),
     device.getPhysicalDevice(),
     swapChain.getSwapChainExtent(),
@@ -341,7 +331,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   VkRenderPassBeginInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   renderPassInfo.renderPass = renderPass;
-  renderPassInfo.framebuffer = swapChainResources.get()->getSwapChainFramebuffers()[imageIndex];
+  renderPassInfo.framebuffer = swapChainBuffers.get()->getSwapChainFramebuffers()[imageIndex];
   renderPassInfo.renderArea.offset = {0, 0};
   renderPassInfo.renderArea.extent = swapChainExtent;
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -352,38 +342,9 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
   // - VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
   vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-  // here on, moving inside each object
-
-  /*
-  // bind the graphics pipeline
-  // the second parameter specifies if the pipeline is graphics or compute
-  vkCmdBindPipeline(
-    commandBuffer,
-    VK_PIPELINE_BIND_POINT_GRAPHICS,
-    pipeline.getGraphicsPipeline());
-
-  VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapChainExtent.width);
-	viewport.height = static_cast<float>(swapChainExtent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = {0, 0};
-	scissor.extent = swapChainExtent;
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-  */
-
-  // per-object draw call moved in here
+  // per-object draw call
   for (auto& object : renderObjects) {
-    object.recordCommandBuffer(
-      commandBuffer,
-      // pipeline.getPipelineLayout(),
-      currentFrame
-    );
+    object.recordCommandBuffer(commandBuffer, currentFrame);
   }
 
 	vkCmdEndRenderPass(commandBuffer);
@@ -392,3 +353,4 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     throw std::runtime_error("failed to record command buffer");
   }
 }
+
