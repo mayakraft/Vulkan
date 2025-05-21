@@ -2,7 +2,7 @@
 #include "../geometry/Uniforms.h"
 #include "Renderer.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb_image.h"
+#include "../third_party/stb_image.h"
 
 Material::Material(
   Device& device,

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "Model.h"
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "../lib/tiny_obj_loader.h"
+#include "../third_party/tiny_obj_loader.h"
 
 Model::Model(Device& device, Buffers& buffers, std::string modelPath)
   : device(device), buffers(buffers) {
